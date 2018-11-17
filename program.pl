@@ -1,3 +1,10 @@
+/***************************
+* Name: Brandan Quinn      *
+* Project: Prolog Casino   *
+* Class: OPL Section 1     *
+* Date:                    *
+***************************/
+
 % cards
 card(h, 2).
 card(h, 3).
@@ -55,6 +62,11 @@ card(c, q).
 card(c, k).
 card(c, a).
 
+/**
+Function Name: deck
+Purpose: Generate a Deck List
+Parameters: Takes an uninstantiated variable and assigns to it the pre-built deck list.
+**/
 deck([
     (h, 2), (h, 2), (h, 3), (h, 4), (h, 5), (h, 6), (h, 7), (h, 8), (h, 9), (h, x), (h, j), (h, q), (h, k), (h, a),
     (s, 2), (s, 2), (s, 3), (s, 4), (s, 5), (s, 6), (s, 7), (s, 8), (s, 9), (s, x), (s, j), (s, q), (s, k), (s, a),
@@ -62,14 +74,42 @@ deck([
     (c, 2), (c, 2), (c, 3), (c, 4), (c, 5), (c, 6), (c, 7), (c, 8), (c, 9), (c, x), (c, j), (c, q), (c, k), (c, a)
 ]).
 
+% Game Players
+player("Human").
+player("Computer").
+
+/**
+Function Name: shuffledeck
+Purpose: Shuffle a Deck List and assign it to a variable
+Parameters: Variable to assign shuffled deck list to.
+Algorithm: 
+    1. Assign pre-built deck list to Deck variable
+    2. Call random_permutation() to shuffle pre-built deck list and assign the new list to ShuffledDeck variable 
+**/
 shuffledeck(ShuffledDeck) :-    deck(Deck),
                                 random_permutation(Deck, ShuffledDeck).
 
-isfirstcard(h, 2).
-
+/**
+Function Name: printdeck
+Purpose: Print the entirety of a deck 
+Parameters: Accepts a list
+Algorithm:
+    1. If list param is empty, do nothing.
+    2. Else: 
+        a. print the card on top of the deck
+        b. recursively call printdeck with the rest of the deck.
+**/
 printdeck([]).
 printdeck([Top | Rest]) :- write(card(Top)),
                             printdeck(Rest).
+
+/**
+Function Name: draw
+Purpose: Draw a Card from the top of the deck.
+Parameters: Takes an uninstantiated Card variable and a Deck List
+Algorithm: Pulls the top card from the Deck List and assigns it to the Card variable.
+**/
+draw(Card, Deck) :- Deck = [Card | Rest].
 
 :- initialization forall(shuffledeck(ShuffledDeck), printdeck(ShuffledDeck)).
 
