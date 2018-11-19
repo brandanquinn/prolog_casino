@@ -6,6 +6,7 @@
 ***************************/
 
 % cards
+card(Suit, Type).
 card(h, 2).
 card(h, 3).
 card(h, 4).
@@ -63,6 +64,14 @@ card(c, k).
 card(c, a).
 
 /**
+Function Name: startGame
+Purpose: Begins the game for user; needs to be expanded upon later.
+Parameters:
+Algorithm: Simply prints a message to the screen.
+**/
+startGame() :- write("Game is starting.").
+
+/**
 Function Name: deck
 Purpose: Generate a Deck List
 Parameters: Takes an uninstantiated variable and assigns to it the pre-built deck list.
@@ -86,22 +95,25 @@ Algorithm:
     1. Assign pre-built deck list to Deck variable
     2. Call random_permutation() to shuffle pre-built deck list and assign the new list to ShuffledDeck variable 
 **/
-shuffledeck(ShuffledDeck) :-    deck(Deck),
-                                random_permutation(Deck, ShuffledDeck).
+shuffleDeck(GameDeck) :-    deck(NewDeck),
+                            random_permutation(NewDeck, GameDeck).
 
 /**
-Function Name: printdeck
-Purpose: Print the entirety of a deck 
+Function Name: printCards
+Purpose: Print the entirety of a card list 
 Parameters: Accepts a list
 Algorithm:
     1. If list param is empty, do nothing.
     2. Else: 
-        a. print the card on top of the deck
-        b. recursively call printdeck with the rest of the deck.
+        a. print the card on top of the cards
+        b. recursively call printCards with the rest of the cards.
 **/
-printdeck([]).
-printdeck([Top | Rest]) :- write(card(Top)),
-                            printdeck(Rest).
+printCards([]).
+printCards([Top | Rest]) :- Top = (Suit, Type),
+                            write(Suit),
+                            write(Type),
+                            write(" "),
+                            printCards(Rest).
 
 /**
 Function Name: draw
@@ -109,7 +121,115 @@ Purpose: Draw a Card from the top of the deck.
 Parameters: Takes an uninstantiated Card variable and a Deck List
 Algorithm: Pulls the top card from the Deck List and assigns it to the Card variable.
 **/
-draw(Card, Deck) :- Deck = [Card | Rest].
+draw(Card, GameDeck, NewGameDeck) :- GameDeck = [Card | Rest],
+                                    NewGameDeck = Rest.
 
-:- initialization forall(shuffledeck(ShuffledDeck), printdeck(ShuffledDeck)).
+/**
+Function Name: getDeckFromState
+Purpose: Pulls the GameDeck from the State List
+Parameters:
+    State, List containing all variables relevant to game play.
+    GameDeck, Variable to be instantiated to GameDeck from State.
+**/
+getDeckFromState(State, _) :- State = [].
+getDeckFromState(State, GameDeck) :- [GameDeck | _] = State.
+
+/**
+Function Name: getHumanHandFromState
+Purpose: Pulls the HumanHand from the State List
+Parameters:
+    State, List containing all variables relevant to game play.
+    HumanHand, Variable to be instantiated to HumanHand from State.
+**/
+getHumanHandFromState(State, _) :- State = [].
+getHumanHandFromState(State, HumanHand) :- [HumanHand | _] = State.
+
+/**
+Function Name: getComputerHandFromState
+Purpose: Pulls the ComputerHand from the State List
+Parameters:
+    State, List containing all variables relevant to game play.
+    ComputerHand, Variable to be instantiated to ComputerHand from State.
+**/
+getComputerHandFromState(State, _) :- State = [].
+getComputerHandFromState(State, ComputerHand) :- [ComputerHand | _] = State.
+
+/**
+Function Name: dealHumanCards
+Purpose: Deals 4 cards to the Human player
+Parameters:
+    State, List containing all variables relevant to game play.
+    GameDeck, List containing all cards in the deck.
+    NewHumanHand, Variable that will be instantiated to list of cards dealt to Human hand.
+    HNewGameDeck, Variable that will be instantiated to new deck after cards are dealt to human.
+**/
+dealHumanCards(State, GameDeck, NewHumanHand, HNewGameDeck) :- draw(CardOne, GameDeck, NewGameDeck1),
+                                        draw(CardTwo, NewGameDeck1, NewGameDeck2),
+                                        draw(CardThree, NewGameDeck2, NewGameDeck3),
+                                        draw(CardFour, NewGameDeck3, NewGameDeck4),
+                                        HNewGameDeck = NewGameDeck4,
+                                        NewHumanHand = [CardOne, CardTwo, CardThree, CardFour],
+                                        write("Human Cards: "),
+                                        printCards(NewHumanHand),
+                                        nl.
+
+/**
+Function Name: dealComputerCards
+Purpose: Deals 4 cards to the Computer player
+Parameters:
+    State, List containing all variables relevant to game play.
+    HNewGameDeck, List containing all cards in the deck after Human Cards are dealt.
+    NewComputerHand, Variable that will be instantiated to list of cards dealt to Computer hand.
+    CNewGameDeck, Variable that will be instantiated to new deck after cards are dealt to computer.
+**/
+dealComputerCards(State, HNewGameDeck, NewComputerHand, CNewGameDeck) :- draw(CardOne, HNewGameDeck, NewGameDeck1),
+                                        draw(CardTwo, NewGameDeck1, NewGameDeck2),
+                                        draw(CardThree, NewGameDeck2, NewGameDeck3),
+                                        draw(CardFour, NewGameDeck3, NewGameDeck4),
+                                        CNewGameDeck = NewGameDeck4,
+                                        NewComputerHand = [CardOne, CardTwo, CardThree, CardFour],
+                                        write("Computer Cards: "),
+                                        printCards(NewComputerHand),
+                                        nl.
+
+/**
+Function Name: dealTableCards
+Purpose: Deals 4 cards to the Table
+Parameters:
+    State, List containing all variables relevant to game play.
+    CNewGameDeck, List containing all cards in the deck after Computer Cards are dealt.
+    NewComputerHand, Variable that will be instantiated to list of cards dealt to Computer hand.
+    TNewGameDeck, Variable that will be instantiated to new deck after cards are dealt to table.
+**/
+dealTableCards(State, CNewGameDeck, NewTableCards, TNewGameDeck) :- draw(CardOne, CNewGameDeck, NewGameDeck1),
+                                        draw(CardTwo, NewGameDeck1, NewGameDeck2),
+                                        draw(CardThree, NewGameDeck2, NewGameDeck3),
+                                        draw(CardFour, NewGameDeck3, NewGameDeck4),
+                                        TNewGameDeck = NewGameDeck4,
+                                        NewTableCards = [CardOne, CardTwo, CardThree, CardFour],
+                                        write("Table Cards: "),
+                                        printCards(NewTableCards),
+                                        nl.
+
+/**
+Function Name: playRound
+Purpose: Begin playing current round
+Parameters: State, List containing all variables relevant to game play.
+**/
+playRound(State) :- getDeckFromState(State, GameDeck),
+                    shuffleDeck(GameDeck),
+                    dealHumanCards(State, GameDeck, NewHumanHand, HNewGameDeck),
+                    dealComputerCards(State, HNewGameDeck, NewComputerHand, CNewGameDeck),
+                    dealTableCards(State, CNewGameDeck, NewTableCards, TNewGameDeck).
+
+/**
+Function Name: startNewTournament
+Purpose: Begins a new tournament and initializes game state.
+Algorithm: Create game state list and initialize necessary variables.
+**/
+startNewTournament() :- RoundNum = 0,
+                        HumanScore = 0,
+                        ComputerScore = 0,
+                        State = [Score, RoundNum, GameDeck, Human, HumanScore, HumanHand, HumanPile, Computer, ComputerScore, ComputerHand, ComputerPile, Builds, TableCards, PlayNext],
+                        playRound(State).
 
