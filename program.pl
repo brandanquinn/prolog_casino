@@ -331,6 +331,8 @@ printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) 
                                                                                             nl,
                                                                                             write("Computer Pile: "),
                                                                                             printCards(ComputerPile),
+                                                                                            nl,
+                                                                                            write("--------------------------------"),
                                                                                             nl.
 
 /**
@@ -381,6 +383,29 @@ dealTableCards(CNewGameDeck, TableCardsBeforeMove, TNewGameDeck) :- draw(CardOne
                                         TNewGameDeck = NewGameDeck4,
                                         TableCardsBeforeMove = [CardOne, CardTwo, CardThree, CardFour].
 
+
+/**
+FunctionName: checkHandsEmpty
+Purpose: Checks to see if both players hands are empty and re-deals cards as necessary.
+Parameters
+    HumanHand, List of Cards already in Human player's hand.
+    NewHumanHand, Variable to be instantiated to new list of cards in human's hand.
+    ComputerHand, List of Cards already in Computer player's hand.
+    NewComputerHand, Variable to be instantiated to new list of cards in computer's hand.
+    GameDeck, List of cards in Game deck
+    CNewGameDeck, List of cards in game deck after being dealt new cards.
+**/
+checkHandsEmpty(HumanHand, NewHumanHand, ComputerHand, NewComputerHand, GameDeck, CNewGameDeck) :-
+                                    HumanHand = [],
+                                    ComputerHand = [],
+                                    dealHumanCards(GameDeck, NewHumanHand, HNewGameDeck),
+                                    dealComputerCards(HNewGameDeck, NewComputerHand, CNewGameDeck).
+                                    
+checkHandsEmpty(HumanHand, NewHumanHand, ComputerHand, NewComputerHand, GameDeck, CNewGameDeck) :-
+                                    CNewGameDeck = GameDeck,      
+                                    NewHumanHand = HumanHand,
+                                    NewComputerHand = ComputerHand.
+
 /**
 Function Name: playRound
 Purpose: Begin playing current round
@@ -397,7 +422,10 @@ playRound(State) :-
                     getTableCardsFromState(State, TableCardsBeforeMove),
                     getHumanHandFromState(State, HumanHandBeforeMove),
                     getComputerHandFromState(State, ComputerHandBeforeMove),
-                    getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHand, ComputerHand, TableCards),
+                    getDeckFromState(State, NewGameDeck),
+                    checkHandsEmpty(HumanHandBeforeMove, HumanHandAfterCheck, ComputerHandBeforeMove, ComputerHandAfterCheck, NewGameDeck, GameDeck),
+                    printBoard(State, HumanPile, HumanHandAfterCheck, TableCardsBeforeMove, ComputerPile, ComputerHandAfterCheck),
+                    getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandAfterCheck, ComputerHandAfterCheck, HumanHand, ComputerHand, TableCards),
                     printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand),
                     NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, TableCards, NextPlayer],
                     playRound(NewState).
