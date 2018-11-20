@@ -236,6 +236,13 @@ selectCard([], _, _).
 selectCard(HumanHandBeforeMove, Card, Input) :- nth0(Input, HumanHandBeforeMove, Card).
 selectCard(ComputerHandBeforeMove, Card, Input) :- nth0(Input, ComputerHandBeforeMove, Card).
 
+/**
+Function Name: removeCardFromList
+Purpose: Removes given Card from list.
+Parameters:
+    Card, Card to be removed from list.
+    [Card | Rest], To see if card is the first element in list
+**/
 removeCardFromList(Card, [Card | Rest], Rest).
 removeCardFromList(Card, [X | Rest], [X | Rest1]) :- removeCardFromList(Card, Rest, Rest1).
 
@@ -251,6 +258,8 @@ Parameters:
 **/
 trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove) :- append(TableCardsBeforeMove, [Card], TableCardsAfterMove),
                                                                                                 removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove).
+trail(Card, TableCardsBeforeMove, TableCardsAfterMove, ComputerHandBeforeMove, ComputerHandAfterMove) :- append(TableCardsBeforeMove, [Card], TableCardsAfterMove),
+                                                                                                removeCardFromList(Card, ComputerHandBeforeMove, ComputerHandAfterMove).
 
 
 /**
@@ -274,13 +283,19 @@ getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHa
                                                                                     trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove),
                                                                                     getHumanPileFromState(State, HumanPile),
                                                                                     getComputerPileFromState(State, ComputerPile),
-                                                                                    printBoard(State, HumanPile, HumanHandAfterMove, TableCardsAfterMove, ComputerPile, ComputerHandBeforeMove).
+                                                                                    ComputerHandAfterMove = ComputerHandBeforeMove,
+                                                                                    NextPlayer = computer.
 
 getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove) :- 
                                                                                     getPlayNextFromState(State, NewNextPlayer),
                                                                                     NewNextPlayer == computer,
-                                                                                    write("Computer making move.").
-
+                                                                                    write("Computer making move."), nl,
+                                                                                    selectCard(ComputerHandBeforeMove, Card, 0),
+                                                                                    trail(Card, TableCardsBeforeMove, TableCardsAfterMove, ComputerHandBeforeMove, ComputerHandAfterMove),
+                                                                                    NextPlayer = human,
+                                                                                    HumanHandAfterMove = HumanHandBeforeMove,
+                                                                                    getHumanPileFromState(State, HumanPile),
+                                                                                    getComputerPileFromState(State, ComputerPile).
 /**
 Function Name: printWhoseTurn
 Purpose: Prints whose turn it is.
@@ -371,36 +386,43 @@ Function Name: playRound
 Purpose: Begin playing current round
 Parameters: State, List containing all variables relevant to game play.
 **/
-playRound(State) :- shuffleDeck(NewGameDeck, GameDeckBeforeMove),
-                    dealHumanCards(GameDeckBeforeMove, HumanHandBeforeMove, HNewGameDeck),
-                    dealComputerCards(HNewGameDeck, ComputerHandBeforeMove, CNewGameDeck),
-                    dealTableCards(CNewGameDeck, TableCardsBeforeMove, TNewGameDeck),
+playRound(State) :-
                     /** Piles not being properly accessed from state. **/
                     getHumanPileFromState(State, HumanPile),
                     getComputerPileFromState(State, ComputerPile),
-                    printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),
                     getRoundNumFromState(State, RoundNum),
                     getHumanScoreFromState(State, HumanScore),
                     getComputerScoreFromState(State, ComputerScore),
                     getBuildsFromState(State, Builds),
-                    GameDeck = TNewGameDeck,
+                    getTableCardsFromState(State, TableCardsBeforeMove),
+                    getHumanHandFromState(State, HumanHandBeforeMove),
+                    getComputerHandFromState(State, ComputerHandBeforeMove),
                     getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHand, ComputerHand, TableCards),
-                    NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, TableCards, NextPlayer].
+                    printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand),
+                    NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, TableCards, NextPlayer],
+                    playRound(NewState).
+
+setupRound() :- shuffleDeck(NewGameDeck, GameDeckBeforeMove),
+                    dealHumanCards(GameDeckBeforeMove, HumanHandBeforeMove, HNewGameDeck),
+                    dealComputerCards(HNewGameDeck, ComputerHandBeforeMove, CNewGameDeck),
+                    dealTableCards(CNewGameDeck, TableCardsBeforeMove, TNewGameDeck),
+                    RoundNum = 0,
+                    HumanScore = 0,
+                    ComputerScore = 0,
+                    NextPlayer = human,
+                    HumanPile = [],
+                    ComputerPile = [],
+                    Builds = [],
+                    State = [RoundNum, TNewGameDeck, HumanScore, HumanHandBeforeMove, HumanPile, ComputerScore, ComputerHandBeforeMove, ComputerPile, Builds, TableCardsBeforeMove, NextPlayer],
+                    printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),                    
+                    playRound(State).
 
 /**
 Function Name: startNewTournament
 Purpose: Begins a new tournament and initializes game state.
 Algorithm: Create game state list and initialize necessary variables.
 **/
-startNewTournament() :- RoundNum = 0,
-                        HumanScore = 0,
-                        ComputerScore = 0,
-                        NextPlayer = human,
-                        HumanPile = [],
-                        ComputerPile = [],
-                        Builds = [],
-                        State = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, TableCards, NextPlayer],
-                        playRound(State).
+startNewTournament() :- setupRound().
 startNewTournament() :- write("Failed to start new tournament.").
 
 /**
