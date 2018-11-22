@@ -103,6 +103,30 @@ printCards([Top | Rest]) :- Top = (Suit, Type),
                             write(" "),
                             printCards(Rest).
 printCards(_) :- write("Printing cards from uninstantiated variable."), nl.
+
+getValue((_, Type), Value) :- 
+        Type == x,
+        Value = 10.
+
+getValue((_, Type), Value) :-
+        Type == j,
+        Value = 11.
+
+getValue((_, Type), Value) :-
+        Type == q,
+        Value = 12.
+
+getValue((_, Type), Value) :-
+        Type == k,
+        Value = 13.
+
+getValue((_, Type), Value) :-
+        Type == a,
+        Value = 14.
+
+getValue((_, Type), Value) :-
+        Value = Type.
+        
 /**
 Function Name: draw
 Purpose: Draw a Card from the top of the deck.
@@ -232,6 +256,7 @@ Parameters:
     Card, Variable to be instantiated to card selected.
     Input, Integer input value to pull card from list.
 **/
+selectCard(_, _, -1).
 selectCard([], _, _).
 selectCard(HumanHandBeforeMove, Card, Input) :- nth0(Input, HumanHandBeforeMove, Card).
 selectCard(ComputerHandBeforeMove, Card, Input) :- nth0(Input, ComputerHandBeforeMove, Card).
@@ -249,6 +274,16 @@ removeCardFromList(Card, [X | Rest], [X | Rest1]) :- removeCardFromList(Card, Re
 removeCardsFromList([], TableCardsBeforeMove, TableCardsAfterMove).
 removeCardsFromList(CapturedCards, TableCardsBeforeMove, TableCardsAfterMove) :-
         subtract(TableCardsBeforeMove, CapturedCards, TableCardsAfterMove).
+
+/**
+
+**/
+getSetValue([], Value, FinalVal) :- FinalVal = Value.
+getSetValue(CardList, Value, FinalVal) :-
+        [Card | Rest] = CardList,
+        getValue(Card, CardVal),
+        NewVal is Value + CardVal,
+        getSetValue(Rest, NewVal, FinalVal).
 
 /**
 Function Name: trail
@@ -302,33 +337,108 @@ Parameters:
     CapturableCardsAfterm, Uninstantiated list that will contain all cards capturable.
 **/
 getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCardsAfter) :-
-    TableCards = [],
-    CapturableCardsAfter = CapturableCardsBefore.
+        TableCards = [],
+        CapturableCardsAfter = CapturableCardsBefore.
 
 getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCardsAfter) :-
-    (_, PlayedType) = CardPlayed,
-    [TableCard | Rest] = TableCards,
-    (_, TableCardType) = TableCard,
-    PlayedType = TableCardType,
-    append(CapturableCardsBefore, [TableCard], NewCapList),
-    getCapturableCards(Rest, CardPlayed, NewCapList, CapturableCardsAfter).
+        (_, PlayedType) = CardPlayed,
+        [TableCard | Rest] = TableCards,
+        (_, TableCardType) = TableCard,
+        PlayedType = TableCardType,
+        append(CapturableCardsBefore, [TableCard], NewCapList),
+        getCapturableCards(Rest, CardPlayed, NewCapList, CapturableCardsAfter).
 
 getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCardsAfter) :-
-    [_ | Rest] = TableCards,
-    getCapturableCards(Rest, CardPlayed, CapturableCardsBefore, CapturableCardsAfter).
+        [_ | Rest] = TableCards,
+        getCapturableCards(Rest, CardPlayed, CapturableCardsBefore, CapturableCardsAfter).
 
+/**
+Function Name: build
+Purpose: Make a build move.
+Paramaters:
+    CardSelected, Card selected as the capture card for build.
+    CardPlayed, Card selected to be played into the build from hand.
+    TableCardsBeforeMove, List of cards on the table before a move is made.
+    TableCardsAfterMove, Uninstantiated list of cards on the table after the move is made.
+    HumanHandBeforeMove, List of cards in the human player's hand.
+    HumanHandAfterMove, Uninstantiated list of cards in human player's hand after move is made.
+    HumanPileBeforeMove, List of cards in human player's pile.
+    HumanPileAfterMove, Uninstantiated list of cards in human player's pile after move is made.
+**/
+build(CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+        getValue(CardSelected, SelectedValue),
+        getValue(CardPlayed, PlayedValue),
+        getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected),
+        append(FinalCardsSelected, [CardPlayed], BuildCardList),
+        getSetValue(BuildCardList, 0, BuildVal),
+        BuildVal = SelectedValue,
+        write("Creating build of: [ "), printCards(BuildCardList), write("]"), nl,
+        removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
+        removeCardsFromList(BuildCardList, TableCardsBeforeMove, TableCardsAfterMove),
+        append(BuildsBeforeMove, [BuildCardList], BuildsAfterMove).
+
+build(CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
+
+/**
+Function Name: getTableCardsForBuild
+Purpose: Wrapper to get cards selected for build by user.
+Parameters:
+    TableCardsBeforeMove, List of cards to be selected from the table.
+    FinalCardsSelected, List of cards selected by user.
+**/
+getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected) :-
+        write("Select the card you want to build with: "),
+        printCards(TableCardsBeforeMove),
+        read(Input),
+        getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
+        write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
+        
+/**
+Function Name: getSelection
+Purpose: Continuously select cards from a given list, until -1 is input.
+Parameters:
+    TableCardsBeforeMove, List of cards on the table before a move is made.
+    TableCardsForBuild, List of cards selected for a build.
+    FinalCardsSelected, Uninstantiated list of cards that will contain the final list.
+    Input, User input to select card. 
+**/
+getSelection([], _, _, _).
+
+getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input) :-
+        Input = -1,
+        FinalCardsSelected = TableCardsForBuild.
+
+getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input) :-
+        selectCard(TableCardsBeforeMove, TableCardSelected, Input),
+        append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
+        removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
+        write("Select the card you want to build with: "),
+        printCards(NewTableCards),
+        read(NewInput),
+        getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
+
+
+getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input) :-
+        selectCard(TableCardsBeforeMove, TableCardSelected, Input),
+        append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
+        removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
+        write("Cards currently selected: "), printCards(NewCardsSelected), nl,
+        write("Select the card(s) you want to build with: "),
+        printCards(NewTableCards),
+        read(NewInput),
+        getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
 
 /**
 Function Name: makeMove
 Purpose: Make move given user's move selection.
 Parameters:
     MoveInput, Move selected by player
-    TableCardsBeforeMove, List of cards on tbale before move is made.
+    TableCardsBeforeMove, List of cards on table before move is made.
     TableCardsAfterMove, Variable to be instantiated to list of cards on table after move is made.
     HumanHandBeforeMove, List of cards in player's hand.
     HumanHandAfterMove, Variable to be instantiated to list of cards in hand after move is made.
 **/
-makeMove(MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
         MoveInput == trail,
         write("Select the idx of card in your hand: "),
         printCards(HumanHandBeforeMove),
@@ -338,7 +448,7 @@ makeMove(MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBe
         trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove),
         HumanPileAfterMove = HumanPileBeforeMove.
 
-makeMove(MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
         MoveInput == capture,
         write("Select the idx of card in your hand: "),
         printCards(HumanHandBeforeMove),
@@ -347,6 +457,18 @@ makeMove(MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBe
         selectCard(HumanHandBeforeMove, Card, Input), 
         capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove).
 
+makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+        MoveInput == build,
+        write("Select the card you want to sum the build to: "),
+        printCards(HumanHandBeforeMove),
+        read(Input1),
+        write("Select the card you want to play into a build: "),
+        printCards(HumanHandBeforeMove),
+        read(Input2),
+        selectCard(HumanHandBeforeMove, CardSelected, Input1),
+        selectCard(HumanHandBeforeMove, CardPlayed, Input2),
+        build(CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove),
+        BuildsBeforeMove \= BuildsAfterMove.
                             
 /**
 Function Name: getMove
@@ -359,7 +481,7 @@ Parameters:
     ComputerHandBeforeMove, List of cards in computer's hand before move is made.
     HumanHand
 **/
-getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :-
+getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :-
         getPlayNextFromState(State, NewNextPlayer),
         NewNextPlayer == human,
         write("What move would you like to make?"), nl,
@@ -367,12 +489,12 @@ getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHa
         read(MoveInput),
         getHumanPileFromState(State, HumanPileBeforeMove),
         getComputerPileFromState(State, ComputerPileAfterMove),
-        makeMove(MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove), 
-        TableCardsAfterMove \= TableCardsBeforeMove, 
+        makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove), 
+        TableCardsAfterMove \= TableCardsBeforeMove,
         ComputerHandAfterMove = ComputerHandBeforeMove,
         NextPlayer = computer.
 
-getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :- 
+getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :- 
         getPlayNextFromState(State, NewNextPlayer),
         NewNextPlayer == computer,
         write("Computer making move."), nl,
@@ -381,7 +503,8 @@ getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHa
         NextPlayer = human,
         HumanHandAfterMove = HumanHandBeforeMove,
         getHumanPileFromState(State, HumanPileAfterMove),
-        getComputerPileFromState(State, ComputerPileAfterMove).
+        getComputerPileFromState(State, ComputerPileAfterMove),
+        BuildsAfterMove = BuildsBeforeMove.
 
 
 /**
@@ -393,7 +516,14 @@ printWhoseTurn(NewNextPlayer) :- NewNextPlayer == human,
                                 write("Human player's turn."), nl.
 printWhoseTurn(NewNextPlayer) :- NewNextPlayer == computer,
                                 write("Computer player's turn."), nl.
-printWhoseTurn(_) :- write("Unknown Turn"), nl.                           
+printWhoseTurn(_) :- write("Unknown Turn"), nl.     
+
+printBuilds([]).
+
+printBuilds(Builds) :-
+    [B1 | Rest] = Builds,
+    write("[ "), printCards(B1), write("] "),
+    printBuilds(Rest).
 
 /**
 Function Name: printBoard
@@ -405,6 +535,7 @@ Parameters:
 **/
 printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) :- 
         getPlayNextFromState(State, NewNextPlayer),
+        getBuildsFromState(State, Builds),
         printWhoseTurn(NewNextPlayer),
         write("Human Pile: "),
         printCards(HumanPile),
@@ -413,6 +544,7 @@ printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) 
         printCards(HumanHand),
         nl,
         write("Table Cards: "),
+        printBuilds(Builds),
         printCards(TableCards),
         nl,
         write("Computer Cards: "),
@@ -506,21 +638,20 @@ Parameters: State, List containing all variables relevant to game play.
 playRound(State) :-
                     /** Piles not being properly accessed from state. **/
                     getHumanPileFromState(State, HumanPileBeforeMove),
-                    write("Human Pile in playRound:"), printCards(HumanPileBeforeMove), nl, 
                     getComputerPileFromState(State, ComputerPileBeforeMove),
                     getRoundNumFromState(State, RoundNum),
                     getHumanScoreFromState(State, HumanScore),
                     getComputerScoreFromState(State, ComputerScore),
-                    getBuildsFromState(State, Builds),
+                    getBuildsFromState(State, BuildsBeforeMove),
                     getTableCardsFromState(State, TableCardsBeforeMove),
                     getHumanHandFromState(State, HumanHandBeforeMove),
                     getComputerHandFromState(State, ComputerHandBeforeMove),
                     getDeckFromState(State, NewGameDeck),
                     checkHandsEmpty(HumanHandBeforeMove, HumanHandAfterCheck, ComputerHandBeforeMove, ComputerHandAfterCheck, NewGameDeck, GameDeck),
                     printBoard(State, HumanPileBeforeMove, HumanHandAfterCheck, TableCardsBeforeMove, ComputerPileBeforeMove, ComputerHandAfterCheck),
-                    getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandAfterCheck, ComputerHandAfterCheck, HumanHand, ComputerHand, TableCards, HumanPileAfterMove, ComputerPileAfterMove),
-                    printBoard(State, HumanPileAfterMove, HumanHand, TableCards, ComputerPileAfterMove, ComputerHand),
-                    NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPileAfterMove, ComputerScore, ComputerHand, ComputerPileAfterMove, Builds, TableCards, NextPlayer],
+                    getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandAfterCheck, ComputerHandAfterCheck, HumanHand, ComputerHand, TableCards, HumanPileAfterMove, ComputerPileAfterMove),
+                    NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPileAfterMove, ComputerScore, ComputerHand, ComputerPileAfterMove, BuildsAfterMove, TableCards, NextPlayer],
+                    printBoard(NewState, HumanPileAfterMove, HumanHand, TableCards, ComputerPileAfterMove, ComputerHand),
                     playRound(NewState).
 
 setupRound() :- shuffleDeck(NewGameDeck, GameDeckBeforeMove),
