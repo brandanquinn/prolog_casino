@@ -105,26 +105,31 @@ printCards([Top | Rest]) :- Top = (Suit, Type),
 printCards(_) :- write("Printing cards from uninstantiated variable."), nl.
 
 getValue((_, Type), Value) :- 
-        Type == x,
+        Type = x,
         Value = 10.
 
 getValue((_, Type), Value) :-
-        Type == j,
+        Type = j,
         Value = 11.
 
 getValue((_, Type), Value) :-
-        Type == q,
+        Type = q,
         Value = 12.
 
 getValue((_, Type), Value) :-
-        Type == k,
+        Type = k,
         Value = 13.
 
 getValue((_, Type), Value) :-
-        Type == a,
+        Type = a,
         Value = 14.
 
 getValue((_, Type), Value) :-
+        Type \= x,
+        Type \= j,
+        Type \= q,
+        Type \= k,
+        Type \= a,
         Value = Type.
         
 /**
@@ -275,6 +280,27 @@ removeCardsFromList([], TableCardsBeforeMove, TableCardsAfterMove).
 removeCardsFromList(CapturedCards, TableCardsBeforeMove, TableCardsAfterMove) :-
         subtract(TableCardsBeforeMove, CapturedCards, TableCardsAfterMove).
 
+removeSetsFromList([], BuildsBeforeMove, BuildsAfterMove) :-
+        BuildsAfterMove = BuildsBeforeMove.
+
+removeSetsFromList(CapturedBuilds, BuildsBeforeMove, BuildsAfterMove) :-
+        [B1 | Rest] = CapturedBuilds,
+        removeSetFromList(B1, BuildsBeforeMove, [], NewBuilds),
+        removeSetsFromList(Rest, NewBuilds, BuildsAfterMove).
+
+removeSetFromList(Build, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
+        BuildsBeforeMove = [],
+        FinalBuilds = BuildsAfterMove.
+
+removeSetFromList(Build, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
+        [Set | Rest] = BuildsBeforeMove,
+        Build = Set,
+        removeSetFromList(Build, Rest, BuildsAfterMove, FinalBuilds).
+
+removeSetFromList(Build, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
+        [_ | Rest] = BuildsBeforeMove,
+        append(BuildsAfterMove, Build, NewBuilds),
+        removeSetFromList(Build, Rest, NewBuilds, FinalBuilds).
 /**
 
 **/
@@ -312,16 +338,19 @@ Parameters:
     HumanPileBeforeMove, List of cards in player's pile before move is made.
     HumanPileAfterMove, Uninstantiated variable that will contain list of cards in pile after move is made.
 **/
-capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
         getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
-        CapturableCardsAfter \= [],
         removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove),
         removeCardsFromList(CapturableCardsAfter, TableCardsBeforeMove, TableCardsAfterMove),
         write("Player has selected to capture:"), printCards(CapturableCardsAfter), write("with card:"), printCards([Card]), nl,
+        getCapturableBuilds(Card, BuildsBeforeMove, CapturableBuilds1, CapturableBuilds2),
+        write("Player will also capture: "), printBuilds(CapturableBuilds2), nl,
+        removeSetsFromList(CapturableBuilds2, BuildsBeforeMove, BuildsAfterMove),
         append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
-        append(HumanPileWithCaptureCard, CapturableCardsAfter, HumanPileAfterMove).  
+        addCapturedBuildsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
+        append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterMove).
 
-capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
         CopyOfTableCards = TableCardsBeforeMove,
         getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
         TableCardsAfterMove = TableCardsBeforeMove,
@@ -351,6 +380,31 @@ getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCard
 getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCardsAfter) :-
         [_ | Rest] = TableCards,
         getCapturableCards(Rest, CardPlayed, CapturableCardsBefore, CapturableCardsAfter).
+
+getCapturableBuilds(_, [], CapturableBuilds1, CapturableBuilds2) :-
+        CapturableBuilds2 = CapturableBuilds1.
+
+getCapturableBuilds(CardPlayed, BuildsList, CapturableBuilds1, CapturableBuilds2) :-
+        getValue(CardPlayed, PlayedVal),
+        [B1 | Rest] = BuildsList,
+        getSetValue(B1, 0, BuildVal),
+        PlayedVal = BuildVal,
+        append(CapturableBuilds1, [B1], NewBuilds),
+        getCapturableBuilds(CardPlayed, Rest, NewBuilds, CapturableBuilds2).
+
+getCapturableBuilds(CardPlayed, BuildsList, CapturableBuilds1, CapturableBuilds2) :-
+        [_ | Rest] = BuildsList,
+        getCapturableBuilds(CardPlayed, Rest, CapturableBuilds1, CapturableBuilds2).
+
+addCapturedBuildsToPile([], HumanPileBefore, HumanPileAfter) :-
+        HumanPileAfter = HumanPileBefore.
+
+addCapturedBuildsToPile(CapturableBuilds, HumanPileBefore, HumanPileAfter) :-
+        [B1 | Rest] = CapturableBuilds,
+        append(HumanPileBefore, B1, NewHumanPile),
+        addCapturedBuildsToPile(Rest, NewHumanPile, HumanPileAfter).
+
+
 
 /**
 Function Name: build
@@ -455,7 +509,7 @@ makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMov
         read(Input),
         write("Human making move."), nl,
         selectCard(HumanHandBeforeMove, Card, Input), 
-        capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove).
+        capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove).
 
 makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
         MoveInput == build,
