@@ -263,38 +263,60 @@ Parameters:
 trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove) :- 
         append(TableCardsBeforeMove, [Card], TableCardsAfterMove),
         removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove),
-        write("Player has selected to trail: "), printCards([Card]), nl.
+        write("Player has selected to trail:"), printCards([Card]), nl.
 
+/**
+Function Name: capture
+Purpose: Make a capture move selected by player.
+Parameters:
+    Card, Card selected by player.
+    TableCardsBeforeMove, List of cards on the table before move is made.
+    TableCardsAfterMove, Uninstantiated variable that will contain list of cards after move is made.
+    HumanHandBeforeMove, List of cards in player's hand before move is made.
+    HumanHandAfterMove, Uninstantiated variable that will contain list of cards in hand after move is made.
+    HumanPileBeforeMove, List of cards in player's pile before move is made.
+    HumanPileAfterMove, Uninstantiated variable that will contain list of cards in pile after move is made.
+**/
 capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
-        getCapturableCards(Card, TableCardsBeforeMove, CapturableCardsBefore, CapturableCardsAfter),
+        getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
         CapturableCardsAfter \= [],
         removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove),
         removeCardsFromList(CapturableCardsAfter, TableCardsBeforeMove, TableCardsAfterMove),
-        write("Player has selected to capture: "), printCards(CapturableCardsAfter), write(" with card: "), printCards([Card]), nl,
+        write("Player has selected to capture:"), printCards(CapturableCardsAfter), write("with card:"), printCards([Card]), nl,
         append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
         append(HumanPileWithCaptureCard, CapturableCardsAfter, HumanPileAfterMove).  
 
 capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
-        getCapturableCards(Card, TableCardsBeforeMove, CapturableCardsBefore, CapturableCardsAfter),
-        CapturableCardsAfter = [],
+        CopyOfTableCards = TableCardsBeforeMove,
+        getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
+        TableCardsAfterMove = TableCardsBeforeMove,
         write("No cards can be captured, try again."), nl.
 
-getCapturableCards(_, [], CapturableCardsBefore, CapturableCardsAfter) :- 
-        CapturableCardsAfter = CapturableCardsBefore.
+/**
+Function Name: getCapturableCards
+Purpose: Find all capturable cards and report them back to player.
+Parameters:
+    TableCards, List of cards on the game table.
+    CardPlayed, Card selected for play by player.
+    CapturableCardsBefore, Uninstantiated list of cards that can be captured.
+    CapturableCardsAfterm, Uninstantiated list that will contain all cards capturable.
+**/
+getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCardsAfter) :-
+    TableCards = [],
+    CapturableCardsAfter = CapturableCardsBefore.
 
-getCapturableCards((Suit, Type), TableCardsBeforeMove, CapturableCardsBefore, CapturableCardsAfter) :-
-        [NewCard | Rest] = TableCardsBeforeMove,
-        (NewSuit, NewType) = NewCard,
-        Type \= NewType,
-        getCapturableCards((Suit, Type), Rest, CapturableCardsBefore, CapturableCardsAfter).        
+getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCardsAfter) :-
+    (_, PlayedType) = CardPlayed,
+    [TableCard | Rest] = TableCards,
+    (_, TableCardType) = TableCard,
+    PlayedType = TableCardType,
+    append(CapturableCardsBefore, [TableCard], NewCapList),
+    getCapturableCards(Rest, CardPlayed, NewCapList, CapturableCardsAfter).
 
-getCapturableCards((Suit, Type), TableCardsBeforeMove, CapturableCardsBefore, CapturableCardsAfter) :-
-        [NewCard | Rest] = TableCardsBeforeMove,
-        (NewSuit, NewType) = NewCard,
-        Type = NewType,
-        append(CapturableCardsBefore, [NewCard], CapturableCardsAfter),
-        getCapturableCards((Suit, Type), Rest, CapturableCardsAfter, NewCapturableCards).
-        
+getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCardsAfter) :-
+    [_ | Rest] = TableCards,
+    getCapturableCards(Rest, CardPlayed, CapturableCardsBefore, CapturableCardsAfter).
+
 
 /**
 Function Name: makeMove
@@ -313,7 +335,8 @@ makeMove(MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBe
         read(Input),
         write("Human making move."), nl,
         selectCard(HumanHandBeforeMove, Card, Input),
-        trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove).
+        trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove),
+        HumanPileAfterMove = HumanPileBeforeMove.
 
 makeMove(MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
         MoveInput == capture,
@@ -322,8 +345,7 @@ makeMove(MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBe
         read(Input),
         write("Human making move."), nl,
         selectCard(HumanHandBeforeMove, Card, Input), 
-        capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove),
-        HumanPileAfterMove \= HumanPileBeforeMove.
+        capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove).
 
                             
 /**
@@ -360,6 +382,8 @@ getMove(State, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHa
         HumanHandAfterMove = HumanHandBeforeMove,
         getHumanPileFromState(State, HumanPileAfterMove),
         getComputerPileFromState(State, ComputerPileAfterMove).
+
+
 /**
 Function Name: printWhoseTurn
 Purpose: Prints whose turn it is.
@@ -482,6 +506,7 @@ Parameters: State, List containing all variables relevant to game play.
 playRound(State) :-
                     /** Piles not being properly accessed from state. **/
                     getHumanPileFromState(State, HumanPileBeforeMove),
+                    write("Human Pile in playRound:"), printCards(HumanPileBeforeMove), nl, 
                     getComputerPileFromState(State, ComputerPileBeforeMove),
                     getRoundNumFromState(State, RoundNum),
                     getHumanScoreFromState(State, HumanScore),
