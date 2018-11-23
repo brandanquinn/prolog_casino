@@ -299,7 +299,12 @@ removeSetsFromList(CapturedBuilds, BuildsBeforeMove, BuildsAfterMove) :-
         removeSetsFromList(Rest, NewBuilds, BuildsAfterMove).
 
 /**
-
+Function Name: flattenList
+Purpose: Flatten a 2d list of cards.
+Parameters:
+    BigList, 2d List of cards to flatten.
+    FlatListBefore, temp variable to add cards to.
+    FlatListAfter, Variable to pipe flattened list through.
 **/
 flattenList([], FlatListBefore, FlatListAfter) :-
         FlatListAfter = FlatListBefore.
@@ -517,7 +522,14 @@ addCapturedSetsToPile(CapturableBuilds, HumanPileBefore, HumanPileAfter) :-
         addCapturedSetsToPile(Rest, NewHumanPile, HumanPileAfter).
 
 /**
-
+Function Name: getCapturableSets
+Purpose: Get list of capturable sets
+Parameters:
+    Input, User input as to whether or not they want to continue selecting sets for capture.
+    Card, Card selected to capture with.
+    TableCardsBeforeMove, List of cards on the table before the sets are generated for capture.
+    CapturableSetsBefore, Uninstantiated var to keep track of Capturable Sets
+    CapturableSetsAfter, Uninstantiated var used to send capturable sets through.
 **/
 getCapturableSets(n, Card, TableCardsBeforeMove, CapturableSetsBefore, CapturableSetsAfter) :-
         CapturableSetsAfter = CapturableSetsBefore.
@@ -535,12 +547,6 @@ getCapturableSets(Input, Card, TableCardsBeforeMove, CabturableSetsBefore, Captu
 
 getCapturableSets(_, Card, TableCardsBeforeMove, CapturableCardsBefore, CapturableCardsAfter) :-
         CapturableSetsAfter = [].
-
-
-
-
-
-
 
 /**
 Function Name: build
@@ -584,7 +590,11 @@ getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected) :-
         write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
 
 /**
-
+Function Name: getTableCardsForSets
+Purpose: Wrapper to get cards selected for set capture by user.
+Parameters:
+    TableCardsBeforeMove, List of cards to be selected from the table.
+    FinalCardsSelected, List of cards selected by user.
 **/
 getTableCardsForSets(TableCardsBeforeMove, FinalCardsSelected) :-
         write("Select the card you want to add to set for capture: "),
@@ -720,7 +730,9 @@ printWhoseTurn(NewNextPlayer) :- NewNextPlayer == computer,
 printWhoseTurn(_) :- write("Unknown Turn"), nl.     
 
 /**
-
+Function Name: printBuilds
+Purpose: Print current builds on table.
+Parameters: Builds, List of current builds.
 **/
 printBuilds([]).
 
@@ -730,7 +742,9 @@ printBuilds(Builds) :-
     printBuilds(Rest).
 
 /**
-
+Function Name: printSets
+Purpose: Print Sets of cards.
+Parameters: Sets, List of sets of cards.
 **/
 printSets([]).
 
