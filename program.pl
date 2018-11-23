@@ -280,6 +280,14 @@ removeCardsFromList([], TableCardsBeforeMove, TableCardsAfterMove).
 removeCardsFromList(CapturedCards, TableCardsBeforeMove, TableCardsAfterMove) :-
         subtract(TableCardsBeforeMove, CapturedCards, TableCardsAfterMove).
 
+/**
+Function Name: removeSetsFromList
+Purpose: Remove captured builds from set of current builds, can be extended later for set capture
+Parameters:
+    CapturedBuilds, List of Builds selected for capture.
+    BuildsBeforeMove, List of current Builds in the game.
+    BuildsAfterMove, Uninstantiated variable that will contain list of current builds after captured ones are removed.
+**/
 removeSetsFromList([], BuildsBeforeMove, BuildsAfterMove) :-
         BuildsAfterMove = BuildsBeforeMove.
 
@@ -288,6 +296,15 @@ removeSetsFromList(CapturedBuilds, BuildsBeforeMove, BuildsAfterMove) :-
         removeSetFromList(B1, BuildsBeforeMove, [], NewBuilds),
         removeSetsFromList(Rest, NewBuilds, BuildsAfterMove).
 
+/**
+Function Name: removeSetFromList
+Purpose: Called by removeSetsFromList to remove each individual set from the list.
+Parameters: 
+    Build, Build selected for capture.
+    BuildsBeforeMove, List of current Builds in the game.
+    BuildsAfterMove, Uninstantiated variable that will contain list of current builds after captured ones are removed.
+    FinalBuilds, Uninstantiated variable used to pass the updated BuildsAfterMove variable through.
+**/
 removeSetFromList(Build, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
         BuildsBeforeMove = [],
         FinalBuilds = BuildsAfterMove.
@@ -298,11 +315,16 @@ removeSetFromList(Build, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
         removeSetFromList(Build, Rest, BuildsAfterMove, FinalBuilds).
 
 removeSetFromList(Build, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
-        [_ | Rest] = BuildsBeforeMove,
-        append(BuildsAfterMove, Build, NewBuilds),
+        [NB | Rest] = BuildsBeforeMove,
+        append(BuildsAfterMove, [NB], NewBuilds),
         removeSetFromList(Build, Rest, NewBuilds, FinalBuilds).
 /**
-
+Function Name: getSetValue
+Purpose: Get the sum value of a set of cards.
+Parameters: 
+    CardList, List of cards in the set.
+    Value, Variable used to sum cards.
+    FinalVal, Uninstantiated variable used to pass the updated Value through.
 **/
 getSetValue([], Value, FinalVal) :- FinalVal = Value.
 getSetValue(CardList, Value, FinalVal) :-
@@ -381,6 +403,15 @@ getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCard
         [_ | Rest] = TableCards,
         getCapturableCards(Rest, CardPlayed, CapturableCardsBefore, CapturableCardsAfter).
 
+/**
+Function Name: getCapturableBuilds
+Purpose: Get list of capturable builds on the table.
+Parameters:
+    CardPlayed, Card selected to be played into the build.
+    BuildsList, List of current builds in the game
+    CapturableBuilds1, Uninstantiated var containing list of builds that can be captured.
+    CapturableBuilds2, Uninstantiated var that will be used to send CB1 through.
+**/
 getCapturableBuilds(_, [], CapturableBuilds1, CapturableBuilds2) :-
         CapturableBuilds2 = CapturableBuilds1.
 
@@ -396,6 +427,14 @@ getCapturableBuilds(CardPlayed, BuildsList, CapturableBuilds1, CapturableBuilds2
         [_ | Rest] = BuildsList,
         getCapturableBuilds(CardPlayed, Rest, CapturableBuilds1, CapturableBuilds2).
 
+/**
+Function Name: addCapturedBuildsToPile
+Purpose: Adds captured builds to the player's pile.
+Paramaters:
+    CapturableBuilds, List of builds captured by player.
+    HumanPileBefore, List of cards in player's pile before move is made.
+    HumanPileAfter, Uninstantiated variable that will contain all cards in the player's pile after move is made.
+**/
 addCapturedBuildsToPile([], HumanPileBefore, HumanPileAfter) :-
         HumanPileAfter = HumanPileBefore.
 
@@ -522,7 +561,8 @@ makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMov
         selectCard(HumanHandBeforeMove, CardSelected, Input1),
         selectCard(HumanHandBeforeMove, CardPlayed, Input2),
         build(CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove),
-        BuildsBeforeMove \= BuildsAfterMove.
+        BuildsBeforeMove \= BuildsAfterMove,
+        HumanPileAfterMove = HumanPileBeforeMove.
                             
 /**
 Function Name: getMove
@@ -544,7 +584,6 @@ getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMo
         getHumanPileFromState(State, HumanPileBeforeMove),
         getComputerPileFromState(State, ComputerPileAfterMove),
         makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove), 
-        TableCardsAfterMove \= TableCardsBeforeMove,
         ComputerHandAfterMove = ComputerHandBeforeMove,
         NextPlayer = computer.
 
