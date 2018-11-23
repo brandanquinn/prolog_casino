@@ -5,6 +5,8 @@
 * Date:                    *
 ***************************/
 
+:-style_check(-singleton).
+
 % cards
 card(Suit, Type).
 card(h, 2).
@@ -297,6 +299,17 @@ removeSetsFromList(CapturedBuilds, BuildsBeforeMove, BuildsAfterMove) :-
         removeSetsFromList(Rest, NewBuilds, BuildsAfterMove).
 
 /**
+
+**/
+flattenList([], FlatListBefore, FlatListAfter) :-
+        FlatListAfter = FlatListBefore.
+
+flattenList(BigList, FlatListBefore, FlatListAfter) :-
+        [Set | Rest] = BigList,
+        append(FlatListBefore, Set, NewList),
+        flattenList(Rest, NewList, FlatListAfter).
+
+/**
 Function Name: removeSetFromList
 Purpose: Called by removeSetsFromList to remove each individual set from the list.
 Parameters: 
@@ -360,23 +373,83 @@ Parameters:
     HumanPileBeforeMove, List of cards in player's pile before move is made.
     HumanPileAfterMove, Uninstantiated variable that will contain list of cards in pile after move is made.
 **/
-capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+
+/** Can capture same face cards, builds, and sets**/
+capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+        /** Same face capture **/
         getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
-        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove),
-        removeCardsFromList(CapturableCardsAfter, TableCardsBeforeMove, TableCardsAfterMove),
-        write("Player has selected to capture:"), printCards(CapturableCardsAfter), write("with card:"), printCards([Card]), nl,
+        CapturableCardsAfter \= [],
+        removeCardsFromList(CapturableCardsAfter, TableCardsBeforeMove, TableCardsAfterSameVal),
+        write("Player has selected to capture: "), printCards(CapturableCardsAfter), write("with card:"), printCards([Card]), nl,
+        /** Build capture **/
         getCapturableBuilds(Card, BuildsBeforeMove, CapturableBuilds1, CapturableBuilds2),
         write("Player will also capture: "), printBuilds(CapturableBuilds2), nl,
         removeSetsFromList(CapturableBuilds2, BuildsBeforeMove, BuildsAfterMove),
+        /** Set capture **/
+        write("Would you like to capture sets? (y/n): "),
+        read(Input),
+        getCapturableSets(Input, Card, TableCardsAfterSameVal, [], CapturableSetsAfter),
+        write("Player will also capture via sets: "), printSets(CapturableSetsAfter),
+        removeSetsFromList(CapturableSetsAfter, TableCardsAfterSameVal, TableCardsAfterMove),
         append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
-        addCapturedBuildsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
-        append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterMove).
+        addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
+        append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterSameVal),
+        addCapturedSetsToPile(CapturableSetsAfter, HumanPileAfterSameVal, HumanPileAfterMove),
+        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove).
 
-capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
-        CopyOfTableCards = TableCardsBeforeMove,
-        getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
+/** Can't capture same face, but can capture builds and sets. **/
+capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+        write("No same face cards can be captured, checking builds."), nl,
+        getBuildsFromState(State, BuildsBeforeMove),
+        getCapturableBuilds(Card, BuildsBeforeMove, CapturableBuilds1, CapturableBuilds2),
+        CapturableBuilds2 \= [],
+        write("Player will also capture: "), printBuilds(CapturableBuilds2), nl,    
+        removeSetsFromList(CapturableBuilds2, BuildsBeforeMove, BuildsAfterMove),
         TableCardsAfterMove = TableCardsBeforeMove,
-        write("No cards can be captured, try again."), nl.
+        append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
+        addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileAfterMove),
+        /** set capture next **/
+        write("Would you like to capture sets? (y/n): "),
+        read(Input),
+        getCapturableSets(Input, Card, TableCardsBeforeMove, [], CapturableSetsAfter),
+        write("Player will also capture via sets: "), printSets(CapturableSetsAfter), nl,
+        flattenList(CapturableSetsAfter, [], FlatList),
+        removeCardsFromList(FlatList, TableCardsAfterSameVal, TableCardsAfterMove),
+        write("Table cards after capture move: "), printCards(TableCardsAfterMove), nl,
+        append(HumanPileBeaforeMove, [Card], HumanPileWithCaptureCard),
+        addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
+        append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterSameVal),
+        addCapturedSetsToPile(CapturableSetsAfter, HumanPileAfterSameVal, HumanPileAfterMove),
+        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove).
+
+
+/** Can't capture same face or build, but can capture sets. **/
+capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+        write("Would you like to capture sets? (y/n): "),
+        read(Input),
+        getCapturableSets(Input, Card, TableCardsBeforeMove, [], CapturableSetsAfter),
+        write("Player will also capture via sets: "), printSets(CapturableSetsAfter), nl,
+        flattenList(CapturableSetsAfter, [], FlatList),
+        removeCardsFromList(FlatList, TableCardsBeforeMove, TableCardsAfterMove),
+        write("Table cards after capture move: "), printCards(TableCardsAfterMove), nl,
+        append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
+        addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
+        append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterSameVal),
+        addCapturedSetsToPile(CapturableSetsAfter, HumanPileAfterSameVal, HumanPileAfterMove),
+        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove).
+
+
+
+
+/** Can't capture anything. **/
+capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+        write("No cards can be captured with card selected. Try again."), nl,
+        getComputerHandFromState(State, ComputerHandBeforeMove),
+        getComputerPileFromState(State, ComputerPileAfterMove),
+        HumanHandAfterMove = HumanPileBeforeMove,
+        getMove(State, BuildsBeforeMove, BuildsAfterMove, human, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove).
+
+
 
 /**
 Function Name: getCapturableCards
@@ -428,20 +501,44 @@ getCapturableBuilds(CardPlayed, BuildsList, CapturableBuilds1, CapturableBuilds2
         getCapturableBuilds(CardPlayed, Rest, CapturableBuilds1, CapturableBuilds2).
 
 /**
-Function Name: addCapturedBuildsToPile
+Function Name: addCapturedSetsToPile
 Purpose: Adds captured builds to the player's pile.
 Paramaters:
     CapturableBuilds, List of builds captured by player.
     HumanPileBefore, List of cards in player's pile before move is made.
     HumanPileAfter, Uninstantiated variable that will contain all cards in the player's pile after move is made.
 **/
-addCapturedBuildsToPile([], HumanPileBefore, HumanPileAfter) :-
+addCapturedSetsToPile([], HumanPileBefore, HumanPileAfter) :-
         HumanPileAfter = HumanPileBefore.
 
-addCapturedBuildsToPile(CapturableBuilds, HumanPileBefore, HumanPileAfter) :-
+addCapturedSetsToPile(CapturableBuilds, HumanPileBefore, HumanPileAfter) :-
         [B1 | Rest] = CapturableBuilds,
         append(HumanPileBefore, B1, NewHumanPile),
-        addCapturedBuildsToPile(Rest, NewHumanPile, HumanPileAfter).
+        addCapturedSetsToPile(Rest, NewHumanPile, HumanPileAfter).
+
+/**
+
+**/
+getCapturableSets(n, Card, TableCardsBeforeMove, CapturableSetsBefore, CapturableSetsAfter) :-
+        CapturableSetsAfter = CapturableSetsBefore.
+
+getCapturableSets(Input, Card, TableCardsBeforeMove, CabturableSetsBefore, CapturableSetsAfter) :-
+        getTableCardsForSets(TableCardsBeforeMove, SingleSet),
+        getSetValue(SingleSet, 0, SetVal),
+        getValue(Card, PlayedVal),
+        PlayedVal = SetVal,
+        append(CapturableSetsBefore, [SingleSet], NewSets),
+        removeSetFromList(TableCardsBeforeMove, [SingleSet], [], TableCardsAfterMove),
+        write("Would you like to select another set for capture? (y/n)"),
+        read(SetInput),
+        getCapturableSets(SetInput, Card, TableCardsAfterMove, NewSets, CapturableSetsAfter).
+
+getCapturableSets(_, Card, TableCardsBeforeMove, CapturableCardsBefore, CapturableCardsAfter) :-
+        CapturableSetsAfter = [].
+
+
+
+
 
 
 
@@ -485,6 +582,17 @@ getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected) :-
         read(Input),
         getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
         write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
+
+/**
+
+**/
+getTableCardsForSets(TableCardsBeforeMove, FinalCardsSelected) :-
+        write("Select the card you want to add to set for capture: "),
+        printCards(TableCardsBeforeMove),
+        read(Input),
+        getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
+        write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
+
         
 /**
 Function Name: getSelection
@@ -505,7 +613,7 @@ getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input) :-
         selectCard(TableCardsBeforeMove, TableCardSelected, Input),
         append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
         removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
-        write("Select the card you want to build with: "),
+        write("Select the card you want to add to set: "),
         printCards(NewTableCards),
         read(NewInput),
         getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
@@ -516,7 +624,7 @@ getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input
         append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
         removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
         write("Cards currently selected: "), printCards(NewCardsSelected), nl,
-        write("Select the card(s) you want to build with: "),
+        write("Select the card(s) you want to add to set: "),
         printCards(NewTableCards),
         read(NewInput),
         getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
@@ -531,7 +639,7 @@ Parameters:
     HumanHandBeforeMove, List of cards in player's hand.
     HumanHandAfterMove, Variable to be instantiated to list of cards in hand after move is made.
 **/
-makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
         MoveInput == trail,
         write("Select the idx of card in your hand: "),
         printCards(HumanHandBeforeMove),
@@ -541,16 +649,16 @@ makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMov
         trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove),
         HumanPileAfterMove = HumanPileBeforeMove.
 
-makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
         MoveInput == capture,
         write("Select the idx of card in your hand: "),
         printCards(HumanHandBeforeMove),
         read(Input),
         write("Human making move."), nl,
         selectCard(HumanHandBeforeMove, Card, Input), 
-        capture(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove).
+        capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove).
 
-makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
         MoveInput == build,
         write("Select the card you want to sum the build to: "),
         printCards(HumanHandBeforeMove),
@@ -583,7 +691,7 @@ getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMo
         read(MoveInput),
         getHumanPileFromState(State, HumanPileBeforeMove),
         getComputerPileFromState(State, ComputerPileAfterMove),
-        makeMove(BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove), 
+        makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove), 
         ComputerHandAfterMove = ComputerHandBeforeMove,
         NextPlayer = computer.
 
@@ -611,12 +719,25 @@ printWhoseTurn(NewNextPlayer) :- NewNextPlayer == computer,
                                 write("Computer player's turn."), nl.
 printWhoseTurn(_) :- write("Unknown Turn"), nl.     
 
+/**
+
+**/
 printBuilds([]).
 
 printBuilds(Builds) :-
     [B1 | Rest] = Builds,
     write("[ "), printCards(B1), write("] "),
     printBuilds(Rest).
+
+/**
+
+**/
+printSets([]).
+
+printSets(Sets) :-
+    [Set | Rest] = Sets,
+    printCards(Set),
+    printSets(Rest).
 
 /**
 Function Name: printBoard
