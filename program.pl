@@ -7,66 +7,8 @@
 
 :-style_check(-singleton).
 
-% cards
-card(Suit, Type).
-card(h, 2).
-card(h, 3).
-card(h, 4).
-card(h, 5).
-card(h, 6).
-card(h, 7).
-card(h, 8).
-card(h, 9).
-card(h, x).
-card(h, j).
-card(h, q).
-card(h, k).
-card(h, a).
-
-card(s, 2).
-card(s, 3).
-card(s, 4).
-card(s, 5).
-card(s, 6).
-card(s, 7).
-card(s, 8).
-card(s, 9).
-card(s, x).
-card(s, j).
-card(s, q).
-card(s, k).
-card(s, a).
-
-card(d, 2).
-card(d, 3).
-card(d, 4).
-card(d, 5).
-card(d, 6).
-card(d, 7).
-card(d, 8).
-card(d, 9).
-card(d, x).
-card(d, j).
-card(d, q).
-card(d, k).
-card(d, a).
-
-card(c, 2).
-card(c, 3).
-card(c, 4).
-card(c, 5).
-card(c, 6).
-card(c, 7).
-card(c, 8).
-card(c, 9).
-card(c, x).
-card(c, j).
-card(c, q).
-card(c, k).
-card(c, a).
-
 /**
-Function Name: deck
+Clause Name: deck
 Purpose: Generate a Deck List
 Parameters: Takes an uninstantiated variable and assigns to it the pre-built deck list.
 **/
@@ -76,74 +18,6 @@ deck([
     (d, 2), (d, 2), (d, 3), (d, 4), (d, 5), (d, 6), (d, 7), (d, 8), (d, 9), (d, x), (d, j), (d, q), (d, k), (d, a),
     (c, 2), (c, 2), (c, 3), (c, 4), (c, 5), (c, 6), (c, 7), (c, 8), (c, 9), (c, x), (c, j), (c, q), (c, k), (c, a)
 ]).
-
-/**
-Function Name: shuffledeck
-Purpose: Shuffle a Deck List and assign it to a variable
-Parameters: Variable to assign shuffled deck list to.
-Algorithm: 
-    1. Assign pre-built deck list to Deck variable
-    2. Call random_permutation() to shuffle pre-built deck list and assign the new list to ShuffledDeck variable 
-**/
-shuffleDeck(NewGameDeck, GameDeckBeforeMove) :- deck(NewGameDeck),
-                            random_permutation(NewGameDeck, GameDeckBeforeMove).
-
-/**
-Function Name: printCards
-Purpose: Print the entirety of a card list 
-Parameters: Accepts a list
-Algorithm:
-    1. If list param is empty, do nothing.
-    2. Else: 
-        a. print the card on top of the cards
-        b. recursively call printCards with the rest of the cards.
-**/
-printCards([]).
-printCards([Top | Rest]) :- Top = (Suit, Type),
-                            write(Suit),
-                            write(Type),
-                            write(" "),
-                            printCards(Rest).
-printCards(_) :- write("Printing cards from uninstantiated variable."), nl.
-
-getValue((_, Type), Value) :- 
-        Type = x,
-        Value = 10.
-
-getValue((_, Type), Value) :-
-        Type = j,
-        Value = 11.
-
-getValue((_, Type), Value) :-
-        Type = q,
-        Value = 12.
-
-getValue((_, Type), Value) :-
-        Type = k,
-        Value = 13.
-
-getValue((_, Type), Value) :-
-        Type = a,
-        Value = 14.
-
-getValue((_, Type), Value) :-
-        Type \= x,
-        Type \= j,
-        Type \= q,
-        Type \= k,
-        Type \= a,
-        Value = Type.
-        
-/**
-Function Name: draw
-Purpose: Draw a Card from the top of the deck.
-Parameters: Takes an uninstantiated Card variable and a Deck List
-Algorithm: Pulls the top card from the Deck List and assigns it to the Card variable.
-**/
-draw(Card, GameDeck, NewGameDeck) :- GameDeck = [Card | Rest],
-                                    NewGameDeck = Rest.
-
-/**  [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, TableCards, NextPlayer] **/
 
 /**
 Function Name: getRoundNumFromState
@@ -255,6 +129,414 @@ Parameters:
 getPlayNextFromState(State, _) :- State = [].
 getPlayNextFromState(State, NewNextPlayer) :- nth0(10, State, NewNextPlayer).
 
+
+/**
+Function Name: shuffledeck
+Purpose: Shuffle a Deck List and assign it to a variable
+Parameters: Variable to assign shuffled deck list to.
+Algorithm: 
+    1. Assign pre-built deck list to Deck variable
+    2. Call random_permutation() to shuffle pre-built deck list and assign the new list to ShuffledDeck variable 
+**/
+shuffleDeck(NewGameDeck, GameDeckBeforeMove) :- deck(NewGameDeck),
+                            random_permutation(NewGameDeck, GameDeckBeforeMove).
+
+/**
+Function Name: printCards
+Purpose: Print the entirety of a card list 
+Parameters: Accepts a list
+Algorithm:
+    1. If list param is empty, do nothing.
+    2. Else: 
+        a. print the card on top of the cards
+        b. recursively call printCards with the rest of the cards.
+**/
+printCards([]).
+printCards([Top | Rest]) :- Top = (Suit, Type),
+                            write(Suit),
+                            write(Type),
+                            write(" "),
+                            printCards(Rest).
+
+/**
+
+**/
+getValue((_, Type), Value) :- 
+        Type = x,
+        Value = 10.
+
+getValue((_, Type), Value) :-
+        Type = j,
+        Value = 11.
+
+getValue((_, Type), Value) :-
+        Type = q,
+        Value = 12.
+
+getValue((_, Type), Value) :-
+        Type = k,
+        Value = 13.
+
+getValue((_, Type), Value) :-
+        Type = a,
+        Value = 14.
+
+getValue((_, Type), Value) :-
+        Type \= x,
+        Type \= j,
+        Type \= q,
+        Type \= k,
+        Type \= a,
+        Value = Type.
+        
+/**
+Function Name: draw
+Purpose: Draw a Card from the top of the deck.
+Parameters: Takes an uninstantiated Card variable and a Deck List
+Algorithm: Pulls the top card from the Deck List and assigns it to the Card variable.
+**/
+draw(Card, GameDeck, NewGameDeck) :- GameDeck = [Card | Rest],
+                                    NewGameDeck = Rest.
+
+
+/**
+Clause Name: start
+Purpose: Starts the game flow. Allows user to input 
+**/
+start() :- 
+        write("Would you like to load a saved game?(y/n): "),
+        read(Input),
+        loadOrNew(Input).
+
+/**
+Clause Name: loadOrNew
+Purpose: Parse user input and load saved game, start new tournament, or re-prompt user if they enter invalid input.
+**/
+loadOrNew(Input) :- 
+        Input == y,
+        loadGame().
+
+loadOrNew(Input) :- 
+        Input == n,
+        startNewTournament().
+
+loadOrNew(_) :- 
+        write("Invalid input."), nl,
+        start().
+
+/**
+Clause Name: loadGame
+Purpose: Load a saved game state
+**/
+loadGame() :- write("Placeholder.").
+
+/**
+Clause Name: startNewTournament
+Purpose: Begins a new tournament and creates new round.
+Algorithm: Create game state list and initialize necessary variables.
+**/
+startNewTournament() :- setupRound().
+startNewTournament() :- write("Failed to start new tournament.").
+
+/**
+Clause Name: setupRound
+Purpose: Initializes new round.
+Algorithm: Shuffle deck, deal cards and create initial game state list.
+**/
+setupRound() :- 
+        shuffleDeck(NewGameDeck, GameDeckBeforeMove),
+        dealCards(GameDeckBeforeMove, HNewGameDeck, HumanHandBeforeMove),
+        dealCards(HNewGameDeck, CNewGameDeck, ComputerHandBeforeMove),
+        dealCards(CNewGameDeck, TNewGameDeck, TableCardsBeforeMove),
+        RoundNum = 0,
+        HumanScore = 0,
+        ComputerScore = 0,
+        NextPlayer = human,
+        HumanPile = [],
+        ComputerPile = [],
+        Builds = [],
+        State = [RoundNum, TNewGameDeck, HumanScore, HumanHandBeforeMove, HumanPile, ComputerScore, ComputerHandBeforeMove, ComputerPile, Builds, TableCardsBeforeMove, NextPlayer],
+        printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),                    
+        playRound(State).
+
+/**
+Clause Name: playRound
+Purpose: Begin playing current round
+Parameters: State, List containing all variables relevant to game play.
+**/
+playRound(State) :-
+        getHumanPileFromState(State, HumanPileBeforeMove),
+        getComputerPileFromState(State, ComputerPileBeforeMove),
+        getRoundNumFromState(State, RoundNum),
+        getHumanScoreFromState(State, HumanScore),
+        getComputerScoreFromState(State, ComputerScore),
+        getBuildsFromState(State, BuildsBeforeMove),
+        getTableCardsFromState(State, TableCardsBeforeMove),
+        getHumanHandFromState(State, HumanHandBeforeMove),
+        getComputerHandFromState(State, ComputerHandBeforeMove),
+        getDeckFromState(State, NewGameDeck),
+        getPlayNextFromState(State, NextPlayer),
+        checkHandsEmpty(HumanHandBeforeMove, HumanHandAfterCheck, ComputerHandBeforeMove, ComputerHandAfterCheck, NewGameDeck, GameDeck),
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterCheck, HumanPileBeforeMove, ComputerScore, ComputerHandAfterCheck, ComputerPileBeforeMove, BuildsBeforeMove, TableCardsBeforeMove, NextPlayer],
+        printBoard(NewState, HumanPileBeforeMove, HumanHandAfterCheck, TableCardsBeforeMove, ComputerPileBeforeMove, ComputerHandAfterCheck),
+        getMove(NewState, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandAfterCheck, ComputerHandAfterCheck, HumanHand, ComputerHand, TableCards, HumanPileAfterMove, ComputerPileAfterMove).
+
+/**
+Clause Name: checkHandsEmpty
+Purpose: Checks to see if both players hands are empty and re-deals cards as necessary.
+Parameters
+    HumanHand, List of Cards already in Human player's hand.
+    NewHumanHand, Variable to be instantiated to new list of cards in human's hand.
+    ComputerHand, List of Cards already in Computer player's hand.
+    NewComputerHand, Variable to be instantiated to new list of cards in computer's hand.
+    GameDeck, List of cards in Game deck
+    CNewGameDeck, List of cards in game deck after being dealt new cards.
+**/
+checkHandsEmpty(HumanHand, NewHumanHand, ComputerHand, NewComputerHand, GameDeck, CNewGameDeck) :-
+        HumanHand = [],
+        ComputerHand = [],
+        dealCards(GameDeck, HNewGameDeck, NewHumanHand),
+        dealCards(HNewGameDeck, CNewGameDeck, NewComputerHand).
+                                    
+checkHandsEmpty(HumanHand, NewHumanHand, ComputerHand, NewComputerHand, GameDeck, CNewGameDeck) :-
+        CNewGameDeck = GameDeck,      
+        NewHumanHand = HumanHand,
+        NewComputerHand = ComputerHand.
+
+/**
+Clause Name: dealCards
+Purpose: Deals 4 cards.
+Parameters:
+    GameDeckBeforeDeal, List of cards in game deck before cards are dealt.
+    GameDeckAfterDeal, Uninstantiated var that will contain list of cards in game deck after cards are dealt.
+    CardList, Uninstantiated var that will contain list of cards dealt.
+**/
+dealCards(GameDeckBeforeDeal, GameDeckAfterDeal, CardList) :-
+        draw(CardOne, GameDeckBeforeDeal, GD1),
+        draw(CardTwo, GD1, GD2),
+        draw(CardThree, GD2, GD3),
+        draw(CardFour, GD3, GD4),
+        GameDeckAfterDeal = GD4,
+        CardList = [CardOne, CardTwo, CardThree, CardFour].
+
+/**
+Function Name: printBoard
+Purpose: Prints the current board using lists from State
+Parameters:
+    NewHumanHand, List containing cards in human's hand..
+    NewTableCards, List containing cards on the table.
+    NewComputerHand, List containing cards in computer's hand.
+**/
+printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) :- 
+        write("--------------------------------"), nl,
+        getPlayNextFromState(State, NewNextPlayer),
+        getBuildsFromState(State, Builds),
+        printWhoseTurn(NewNextPlayer),
+        write("Human Pile: "),
+        printCards(HumanPile),
+        nl,
+        write("Human Cards: "),
+        printCards(HumanHand),
+        nl,
+        write("Table Cards: "),
+        printBuilds(Builds),
+        printCards(TableCards),
+        nl,
+        write("Computer Cards: "),
+        printCards(ComputerHand),
+        nl,
+        write("Computer Pile: "),
+        printCards(ComputerPile),
+        nl,
+        write("--------------------------------"),
+        nl.
+
+/**
+Function Name: printSets
+Purpose: Print Sets of cards.
+Parameters: Sets, List of sets of cards.
+**/
+printSets([[]]).
+
+printSets([]).
+
+printSets(Sets) :-
+    [Set | Rest] = Sets,
+    printCards(Set),
+    printSets(Rest).
+
+/**
+Function Name: printBuilds
+Purpose: Print current builds on table.
+Parameters: Builds, List of current builds.
+**/
+printBuilds([]).
+
+printBuilds(Builds) :-
+    [B1 | Rest] = Builds,
+    write("[ "), printCards(B1), write("] "),
+    printBuilds(Rest).
+
+/**
+Function Name: printWhoseTurn
+Purpose: Prints whose turn it is.
+Parameters: NewNextPlayer, Variable containing whose turn it is.
+**/
+printWhoseTurn(NewNextPlayer) :- 
+        NewNextPlayer = human,
+        write("Human player's turn."), nl.
+printWhoseTurn(NewNextPlayer) :- 
+        NewNextPlayer = computer,
+        write("Computer player's turn."), nl.
+printWhoseTurn(_) :- write("Unknown Turn"), nl.   
+
+/**
+Function Name: getMove
+Purpose: Get move selection from user.
+Parameters:
+    State, List containing current game state.
+    NextPlayer, Player who is currently making the move.
+    TableCardsBeforeMove, List of table cards before a move is made.
+    HumanHandBeforeMove, List of cards in human's hand before move is made.
+    ComputerHandBeforeMove, List of cards in computer's hand before move is made.
+    HumanHand
+**/
+getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :-
+        getPlayNextFromState(State, NewNextPlayer),
+        NewNextPlayer = human,
+        write("What move would you like to make?"), nl,
+        write("(capture, build, increase, trail, save, deck, or exit): "),
+        read(MoveInput),
+        getHumanPileFromState(State, HumanPileBeforeMove),
+        getComputerPileFromState(State, ComputerPileAfterMove),
+        makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove).
+
+% Computer move
+getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :- 
+        getPlayNextFromState(State, NewNextPlayer),
+        NewNextPlayer = computer,
+        write("Computer making move."), nl,
+        selectCard(ComputerHandBeforeMove, Card, 0),
+        trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, ComputerHandBeforeMove, ComputerHandAfterMove).
+
+/**
+Function Name: makeMove
+Purpose: Make move given user's move selection.
+Parameters:
+    MoveInput, Move selected by player
+    TableCardsBeforeMove, List of cards on table before move is made.
+    TableCardsAfterMove, Variable to be instantiated to list of cards on table after move is made.
+    HumanHandBeforeMove, List of cards in player's hand.
+    HumanHandAfterMove, Variable to be instantiated to list of cards in hand after move is made.
+**/
+makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+        MoveInput = trail,
+        write("Select the idx of card in your hand: "),
+        printCards(HumanHandBeforeMove),
+        read(Input),
+        write("Human making move."), nl,
+        selectCard(HumanHandBeforeMove, Card, Input),
+        trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove).
+
+makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+        MoveInput = capture,
+        write("Select the idx of card in your hand: "),
+        printCards(HumanHandBeforeMove),
+        read(Input),
+        write("Human making move."), nl,
+        selectCard(HumanHandBeforeMove, Card, Input), 
+        capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove).
+
+makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+        MoveInput = build,
+        write("Select the card you want to sum the build to: "),
+        printCards(HumanHandBeforeMove),
+        read(Input1),
+        write("Select the card you want to play into a build: "),
+        printCards(HumanHandBeforeMove),
+        read(Input2),
+        selectCard(HumanHandBeforeMove, CardSelected, Input1),
+        selectCard(HumanHandBeforeMove, CardPlayed, Input2),
+        build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
+
+/**
+Clause Name: whosPlayingNext
+Purpose: Get player of next turn.
+Parameters:
+        CurrentPlayer, player who just made a move.
+        NextPlayer, player who is playing next.
+**/
+whosPlayingNext(CurrentPlayer, NextPlayer) :-
+        CurrentPlayer = human,
+        NextPlayer = computer.
+
+whosPlayingNext(CurrentPlayer, NextPlayer) :-
+        CurrentPlayer = computer,
+        NextPlayer = human.
+
+/**
+Function Name: getSelection
+Purpose: Continuously select cards from a given list, until -1 is input.
+Parameters:
+    TableCardsBeforeMove, List of cards on the table before a move is made.
+    TableCardsForBuild, List of cards selected for a build.
+    FinalCardsSelected, Uninstantiated list of cards that will contain the final list.
+    Input, User input to select card. 
+**/
+getSelection([], _, _, _).
+
+getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input) :-
+        Input = -1,
+        FinalCardsSelected = TableCardsForBuild.
+
+getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input) :-
+        selectCard(TableCardsBeforeMove, TableCardSelected, Input),
+        append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
+        removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
+        write("Select the card you want to add to set: "),
+        printCards(NewTableCards),
+        read(NewInput),
+        getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
+
+
+getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input) :-
+        selectCard(TableCardsBeforeMove, TableCardSelected, Input),
+        append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
+        removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
+        write("Cards currently selected: "), printCards(NewCardsSelected), nl,
+        write("Select the card(s) you want to add to set: "),
+        printCards(NewTableCards),
+        read(NewInput),
+        getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
+
+/**
+Function Name: getTableCardsForSets
+Purpose: Wrapper to get cards selected for set capture by user.
+Parameters:
+    TableCardsBeforeMove, List of cards to be selected from the table.
+    FinalCardsSelected, List of cards selected by user.
+**/
+getTableCardsForSets(TableCardsBeforeMove, FinalCardsSelected) :-
+        write("Select the card you want to add to set for capture: "),
+        printCards(TableCardsBeforeMove),
+        read(Input),
+        getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
+        write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
+
+/**
+Function Name: getTableCardsForBuild
+Purpose: Wrapper to get cards selected for build by user.
+Parameters:
+    TableCardsBeforeMove, List of cards to be selected from the table.
+    FinalCardsSelected, List of cards selected by user.
+**/
+getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected) :-
+        write("Select the card you want to build with: "),
+        printCards(TableCardsBeforeMove),
+        read(Input),
+        getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
+        write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
+
 /**
 Function Name: selectCard
 Purpose: Selects a card from a list given an idx.
@@ -278,7 +560,7 @@ Parameters:
 removeCardFromList(Card, [Card | Rest], Rest).
 removeCardFromList(Card, [X | Rest], [X | Rest1]) :- removeCardFromList(Card, Rest, Rest1).
 
-removeCardsFromList([], TableCardsBeforeMove, TableCardsAfterMove).
+removeCardsFromList([], TableCardsBeforeMove, TableCardsAfterMove) :- TableCardsAfterMove = TableCardsBeforeMove.
 removeCardsFromList(CapturedCards, TableCardsBeforeMove, TableCardsAfterMove) :-
         subtract(TableCardsBeforeMove, CapturedCards, TableCardsAfterMove).
 
@@ -352,6 +634,26 @@ getSetValue(CardList, Value, FinalVal) :-
         getSetValue(Rest, NewVal, FinalVal).
 
 /**
+Clause Name: getPlayerHands
+Purpose: Given a current player and a list of cards after move is made, determine whether to update the computer player or the human players hand.
+Parameters:
+        State, List of variables in game state,
+        CurrentPlayer, player who is currently playing,
+        HandAfterMove, List of cards in player's hand after move is made.
+        HumanHand, Uninstantiated var to track list of cards in human's hand.
+        ComputerHand, Uninstantiated var to track list of cards in computer's hand.
+**/
+getPlayerHands(State, CurrentPlayer, HandAfterMove, HumanHand, ComputerHand) :-
+        CurrentPlayer = human,
+        HumanHand = HandAfterMove,
+        getComputerHandFromState(State, ComputerHand).
+
+getPlayerHands(State, CurrentPlayer, HandAfterMove, HumanHand, ComputerHand) :-
+        CurrentPlayer = computer,
+        ComputerHand = HandAfterMove,
+        getHumanHandFromState(State, HumanHand).
+
+/**
 Function Name: trail
 Purpose: Trail a card from player's hand and add it to the table.
 Parameters:
@@ -361,10 +663,60 @@ Parameters:
     HumanHandBeforeMove/ComputerHandBeforeMove, List of cards in player's hand.
     HumanHandAfterMove/ComputerHandAfterMove, Variable to be instantiated to list of cards in hand after card is played.
 **/
-trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove) :- 
+trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HandBeforeMove, HandAfterMove) :- 
         append(TableCardsBeforeMove, [Card], TableCardsAfterMove),
-        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove),
-        write("Player has selected to trail:"), printCards([Card]), nl.
+        removeCardFromList(Card, HandBeforeMove, HandAfterMove),
+        write("Player has selected to trail:"), printCards([Card]), nl,     
+        getRoundNumFromState(State, RoundNum),
+        getDeckFromState(State, GameDeck),
+        getHumanScoreFromState(State, HumanScore),
+        getHumanPileFromState(State, HumanPile),
+        getComputerScoreFromState(State, ComputerScore),
+        getComputerPileFromState(State, ComputerPile),
+        getPlayNextFromState(State, CurrentPlayer),
+        whosPlayingNext(CurrentPlayer, NextPlayer),
+        getPlayerHands(State, CurrentPlayer, HandAfterMove, HumanHand, ComputerHand),
+        getBuildsFromState(State, Builds),
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, TableCardsAfterMove, NextPlayer],
+        playRound(NewState).
+
+
+/**
+Function Name: build
+Purpose: Make a build move.
+Paramaters:
+    CardSelected, Card selected as the capture card for build.
+    CardPlayed, Card selected to be played into the build from hand.
+    TableCardsBeforeMove, List of cards on the table before a move is made.
+    TableCardsAfterMove, Uninstantiated list of cards on the table after the move is made.
+    HumanHandBeforeMove, List of cards in the human player's hand.
+    HumanHandAfterMove, Uninstantiated list of cards in human player's hand after move is made.
+    HumanPileBeforeMove, List of cards in human player's pile.
+    HumanPileAfterMove, Uninstantiated list of cards in human player's pile after move is made.
+**/
+
+build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+        getValue(CardSelected, SelectedValue),
+        getValue(CardPlayed, PlayedValue),
+        getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected),
+        append(FinalCardsSelected, [CardPlayed], BuildCardList),
+        getSetValue(BuildCardList, 0, BuildVal),
+        BuildVal = SelectedValue,
+        write("Creating build of: [ "), printCards(BuildCardList), write("]"), nl,
+        removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
+        removeCardsFromList(BuildCardList, TableCardsBeforeMove, TableCardsAfterMove),
+        append(BuildsBeforeMove, [BuildCardList], BuildsAfterMove),
+        getRoundNumFromState(State, RoundNum),
+        getDeckFromState(State, GameDeck),
+        getHumanScoreFromState(State, HumanScore),
+        getHumanPileFromState(State, HumanPile),
+        getComputerScoreFromState(State, ComputerScore),
+        getComputerHandFromState(State, ComputerHand),
+        getComputerPileFromState(State, ComputerPile),
+        getPlayNextFromState(State, CurrentPlayer),
+        whosPlayingNext(CurrentPlayer, NextPlayer),
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, TableCardsAfterMove, NextPlayer],
+        playRound(NewState).
 
 /**
 Function Name: capture
@@ -383,78 +735,86 @@ Parameters:
 capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
         /** Same face capture **/
         getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
-        CapturableCardsAfter \= [],
+        promptSameFaceCapture(State, CapturableCardsAfter),
         removeCardsFromList(CapturableCardsAfter, TableCardsBeforeMove, TableCardsAfterSameVal),
         write("Player has selected to capture: "), printCards(CapturableCardsAfter), write("with card:"), printCards([Card]), nl,
         /** Build capture **/
         getCapturableBuilds(Card, BuildsBeforeMove, CapturableBuilds1, CapturableBuilds2),
-        write("Player will also capture: "), printBuilds(CapturableBuilds2), nl,
-        removeSetsFromList(CapturableBuilds2, BuildsBeforeMove, BuildsAfterMove),
+        promptBuildCapture(CapturableBuilds2, CapturedBuilds),
+        write("Player will also capture: "), printBuilds(CapturedBuilds), nl,
+        removeSetsFromList(CapturedBuilds, BuildsBeforeMove, BuildsAfterMove),
         /** Set capture **/
-        write("Would you like to capture sets? (y/n): "),
-        read(Input),
-        getCapturableSets(Input, Card, TableCardsAfterSameVal, [], CapturableSetsAfter),
-        write("Player will also capture via sets: "), printSets(CapturableSetsAfter),
-        removeSetsFromList(CapturableSetsAfter, TableCardsAfterSameVal, TableCardsAfterMove),
+        promptSetCapture(State, Card, TableCardsAfterSameVal, CapturableCardsAfter, CapturedBuilds, CapturableSets),
+        write("Player will also capture via sets: "), printSets(CapturableSets), nl,
+        removeSetsFromList(CapturableSets, TableCardsAfterSameVal, TableCardsAfterMove),
         append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
         addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
         append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterSameVal),
-        addCapturedSetsToPile(CapturableSetsAfter, HumanPileAfterSameVal, HumanPileAfterMove),
-        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove).
+        addCapturedSetsToPile(CapturableSets, HumanPileAfterSameVal, HumanPileAfterMove),
+        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove),
+        getRoundNumFromState(State, RoundNum),
+        getDeckFromState(State, GameDeck),
+        getHumanScoreFromState(State, HumanScore),
+        getComputerScoreFromState(State, ComputerScore),
+        getComputerHandFromState(State, ComputerHand),
+        getComputerPileFromState(State, ComputerPile),
+        getPlayNextFromState(State, CurrentPlayer),
+        whosPlayingNext(CurrentPlayer, NextPlayer),
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPileAfterMove, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, TableCardsAfterMove, NextPlayer],
+        playRound(NewState).
 
-/** Can't capture same face, but can capture builds and sets. **/
-capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
-        write("No same face cards can be captured, checking builds."), nl,
-        getBuildsFromState(State, BuildsBeforeMove),
-        getCapturableBuilds(Card, BuildsBeforeMove, CapturableBuilds1, CapturableBuilds2),
-        CapturableBuilds2 \= [],
-        write("Player will also capture: "), printBuilds(CapturableBuilds2), nl,    
-        removeSetsFromList(CapturableBuilds2, BuildsBeforeMove, BuildsAfterMove),
-        TableCardsAfterMove = TableCardsBeforeMove,
-        append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
-        addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileAfterMove),
-        /** set capture next **/
-        write("Would you like to capture sets? (y/n): "),
+/**
+
+**/
+promptSameFaceCapture(State, CapturableCards) :- CapturableCards = [].
+promptSameFaceCapture(State, CapturableCards) :-
+        write("Do you want to capture the following cards? (y/n): "),
+        printCards(CapturableCards),
         read(Input),
-        getCapturableSets(Input, Card, TableCardsBeforeMove, [], CapturableSetsAfter),
-        write("Player will also capture via sets: "), printSets(CapturableSetsAfter), nl,
-        flattenList(CapturableSetsAfter, [], FlatList),
-        removeCardsFromList(FlatList, TableCardsAfterSameVal, TableCardsAfterMove),
-        write("Table cards after capture move: "), printCards(TableCardsAfterMove), nl,
-        append(HumanPileBeaforeMove, [Card], HumanPileWithCaptureCard),
-        addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
-        append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterSameVal),
-        addCapturedSetsToPile(CapturableSetsAfter, HumanPileAfterSameVal, HumanPileAfterMove),
-        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove).
+        Input = n,
+        write("Must capture all same face cards on the table. Try again."), nl,
+        playRound(State).
 
+promptSameFaceCapture(State, CapturableCards).
 
-/** Can't capture same face or build, but can capture sets. **/
-capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
-        write("Would you like to capture sets? (y/n): "),
+/**
+
+**/
+promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
+        CapturableBuilds = [],
+        CapturableBuildsAfterPrompt = CapturableBuilds.
+
+promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
+        write("Do you want to capture the following builds? (y/n): "),
+        printBuilds(CapturableBuilds),
         read(Input),
-        getCapturableSets(Input, Card, TableCardsBeforeMove, [], CapturableSetsAfter),
-        write("Player will also capture via sets: "), printSets(CapturableSetsAfter), nl,
-        flattenList(CapturableSetsAfter, [], FlatList),
-        removeCardsFromList(FlatList, TableCardsBeforeMove, TableCardsAfterMove),
-        write("Table cards after capture move: "), printCards(TableCardsAfterMove), nl,
-        append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
-        addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
-        append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterSameVal),
-        addCapturedSetsToPile(CapturableSetsAfter, HumanPileAfterSameVal, HumanPileAfterMove),
-        removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove).
+        Input = n,
+        CapturableBuildsAfterPrompt = [].
 
+promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
+        CapturableBuildsAfterPrompt = CapturableBuilds.
 
+/**
 
+**/
+promptSetCapture(State, CardPlayed, TableCards, CapturableCards, CapturableBuilds, CapturableSets) :-
+        CapturableCards = [],
+        CapturableBuilds = [],
+        write("Would you like to select sets to capture? (y/n): "),
+        read(Input),
+        Input = n,
+        write("No move made. Try again"), nl,
+        playRound(State).
 
-/** Can't capture anything. **/
-capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
-        write("No cards can be captured with card selected. Try again."), nl,
-        getComputerHandFromState(State, ComputerHandBeforeMove),
-        getComputerPileFromState(State, ComputerPileAfterMove),
-        HumanHandAfterMove = HumanPileBeforeMove,
-        getMove(State, BuildsBeforeMove, BuildsAfterMove, human, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove).
+promptSetCapture(State, CardPlayed, TableCards, CapturableCards, CapturableBuilds, CapturableSets) :-
+        write("Would you like to select sets to capture? (y/n): "),
+        read(Input),
+        Input = n,        
+        CapturableSets = [].
 
-
+promptSetCapture(State, CardPlayed, TableCards, CapturableCards, CapturabledBuilds, CapturableSets) :-
+        getCapturableSets(State, y, CardPlayed, TableCards, [], CapturableSetsAfter),
+        CapturableSets = CapturableSetsAfter.
 
 /**
 Function Name: getCapturableCards
@@ -531,404 +891,35 @@ Parameters:
     CapturableSetsBefore, Uninstantiated var to keep track of Capturable Sets
     CapturableSetsAfter, Uninstantiated var used to send capturable sets through.
 **/
-getCapturableSets(n, Card, TableCardsBeforeMove, CapturableSetsBefore, CapturableSetsAfter) :-
+getCapturableSets(State, Input, Card, TableCardsBeforeMove, CapturableSetsBefore, CapturableSetsAfter) :-
+        Input = n,
         CapturableSetsAfter = CapturableSetsBefore.
 
-getCapturableSets(Input, Card, TableCardsBeforeMove, CabturableSetsBefore, CapturableSetsAfter) :-
+getCapturableSets(State, Input, Card, TableCardsBeforeMove, CabturableSetsBefore, CapturableSetsAfter) :-
         getTableCardsForSets(TableCardsBeforeMove, SingleSet),
         getSetValue(SingleSet, 0, SetVal),
         getValue(Card, PlayedVal),
-        PlayedVal = SetVal,
-        append(CapturableSetsBefore, [SingleSet], NewSets),
-        removeSetFromList(TableCardsBeforeMove, [SingleSet], [], TableCardsAfterMove),
+        evaluateSet(State, PlayedVal, SetVal, SingleSet, SetAfterEval),
+        append(CapturableSetsBefore, [SetAfterEval], NewSets),
+        removeSetFromList(TableCardsBeforeMove, [SetAfterEval], [], TableCardsAfterMove),
         write("Would you like to select another set for capture? (y/n)"),
         read(SetInput),
-        getCapturableSets(SetInput, Card, TableCardsAfterMove, NewSets, CapturableSetsAfter).
+        getCapturableSets(State, SetInput, Card, TableCardsAfterMove, NewSets, CapturableSetsAfter).
 
 getCapturableSets(_, Card, TableCardsBeforeMove, CapturableCardsBefore, CapturableCardsAfter) :-
         CapturableSetsAfter = [].
 
 /**
-Function Name: build
-Purpose: Make a build move.
-Paramaters:
-    CardSelected, Card selected as the capture card for build.
-    CardPlayed, Card selected to be played into the build from hand.
-    TableCardsBeforeMove, List of cards on the table before a move is made.
-    TableCardsAfterMove, Uninstantiated list of cards on the table after the move is made.
-    HumanHandBeforeMove, List of cards in the human player's hand.
-    HumanHandAfterMove, Uninstantiated list of cards in human player's hand after move is made.
-    HumanPileBeforeMove, List of cards in human player's pile.
-    HumanPileAfterMove, Uninstantiated list of cards in human player's pile after move is made.
+
 **/
-build(CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
-        getValue(CardSelected, SelectedValue),
-        getValue(CardPlayed, PlayedValue),
-        getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected),
-        append(FinalCardsSelected, [CardPlayed], BuildCardList),
-        getSetValue(BuildCardList, 0, BuildVal),
-        BuildVal = SelectedValue,
-        write("Creating build of: [ "), printCards(BuildCardList), write("]"), nl,
-        removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
-        removeCardsFromList(BuildCardList, TableCardsBeforeMove, TableCardsAfterMove),
-        append(BuildsBeforeMove, [BuildCardList], BuildsAfterMove).
+evaluateSet(State, PlayedVal, SetVal, Set, SetAfterEval) :-
+        PlayedVal = SetVal,
+        SetAfterEval = Set.
 
-build(CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
-
-/**
-Function Name: getTableCardsForBuild
-Purpose: Wrapper to get cards selected for build by user.
-Parameters:
-    TableCardsBeforeMove, List of cards to be selected from the table.
-    FinalCardsSelected, List of cards selected by user.
-**/
-getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected) :-
-        write("Select the card you want to build with: "),
-        printCards(TableCardsBeforeMove),
-        read(Input),
-        getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
-        write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
-
-/**
-Function Name: getTableCardsForSets
-Purpose: Wrapper to get cards selected for set capture by user.
-Parameters:
-    TableCardsBeforeMove, List of cards to be selected from the table.
-    FinalCardsSelected, List of cards selected by user.
-**/
-getTableCardsForSets(TableCardsBeforeMove, FinalCardsSelected) :-
-        write("Select the card you want to add to set for capture: "),
-        printCards(TableCardsBeforeMove),
-        read(Input),
-        getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
-        write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
-
-        
-/**
-Function Name: getSelection
-Purpose: Continuously select cards from a given list, until -1 is input.
-Parameters:
-    TableCardsBeforeMove, List of cards on the table before a move is made.
-    TableCardsForBuild, List of cards selected for a build.
-    FinalCardsSelected, Uninstantiated list of cards that will contain the final list.
-    Input, User input to select card. 
-**/
-getSelection([], _, _, _).
-
-getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input) :-
-        Input = -1,
-        FinalCardsSelected = TableCardsForBuild.
-
-getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input) :-
-        selectCard(TableCardsBeforeMove, TableCardSelected, Input),
-        append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
-        removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
-        write("Select the card you want to add to set: "),
-        printCards(NewTableCards),
-        read(NewInput),
-        getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
-
-
-getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input) :-
-        selectCard(TableCardsBeforeMove, TableCardSelected, Input),
-        append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
-        removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
-        write("Cards currently selected: "), printCards(NewCardsSelected), nl,
-        write("Select the card(s) you want to add to set: "),
-        printCards(NewTableCards),
-        read(NewInput),
-        getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
-
-/**
-Function Name: makeMove
-Purpose: Make move given user's move selection.
-Parameters:
-    MoveInput, Move selected by player
-    TableCardsBeforeMove, List of cards on table before move is made.
-    TableCardsAfterMove, Variable to be instantiated to list of cards on table after move is made.
-    HumanHandBeforeMove, List of cards in player's hand.
-    HumanHandAfterMove, Variable to be instantiated to list of cards in hand after move is made.
-**/
-makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
-        MoveInput == trail,
-        write("Select the idx of card in your hand: "),
-        printCards(HumanHandBeforeMove),
-        read(Input),
-        write("Human making move."), nl,
-        selectCard(HumanHandBeforeMove, Card, Input),
-        trail(Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove),
-        HumanPileAfterMove = HumanPileBeforeMove.
-
-makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
-        MoveInput == capture,
-        write("Select the idx of card in your hand: "),
-        printCards(HumanHandBeforeMove),
-        read(Input),
-        write("Human making move."), nl,
-        selectCard(HumanHandBeforeMove, Card, Input), 
-        capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove).
-
-makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
-        MoveInput == build,
-        write("Select the card you want to sum the build to: "),
-        printCards(HumanHandBeforeMove),
-        read(Input1),
-        write("Select the card you want to play into a build: "),
-        printCards(HumanHandBeforeMove),
-        read(Input2),
-        selectCard(HumanHandBeforeMove, CardSelected, Input1),
-        selectCard(HumanHandBeforeMove, CardPlayed, Input2),
-        build(CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove),
-        BuildsBeforeMove \= BuildsAfterMove,
-        HumanPileAfterMove = HumanPileBeforeMove.
-                            
-/**
-Function Name: getMove
-Purpose: Get move selection from user.
-Parameters:
-    State, List containing current game state.
-    NextPlayer, Player who is currently making the move.
-    TableCardsBeforeMove, List of table cards before a move is made.
-    HumanHandBeforeMove, List of cards in human's hand before move is made.
-    ComputerHandBeforeMove, List of cards in computer's hand before move is made.
-    HumanHand
-**/
-getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :-
-        getPlayNextFromState(State, NewNextPlayer),
-        NewNextPlayer == human,
-        write("What move would you like to make?"), nl,
-        write("(capture, build, increase, trail, save, deck, or exit): "),
-        read(MoveInput),
-        getHumanPileFromState(State, HumanPileBeforeMove),
-        getComputerPileFromState(State, ComputerPileAfterMove),
-        makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove), 
-        ComputerHandAfterMove = ComputerHandBeforeMove,
-        NextPlayer = computer.
-
-getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :- 
-        getPlayNextFromState(State, NewNextPlayer),
-        NewNextPlayer == computer,
-        write("Computer making move."), nl,
-        selectCard(ComputerHandBeforeMove, Card, 0),
-        trail(Card, TableCardsBeforeMove, TableCardsAfterMove, ComputerHandBeforeMove, ComputerHandAfterMove),
-        NextPlayer = human,
-        HumanHandAfterMove = HumanHandBeforeMove,
-        getHumanPileFromState(State, HumanPileAfterMove),
-        getComputerPileFromState(State, ComputerPileAfterMove),
-        BuildsAfterMove = BuildsBeforeMove.
-
-
-/**
-Function Name: printWhoseTurn
-Purpose: Prints whose turn it is.
-Parameters: NewNextPlayer, Variable containing whose turn it is.
-**/
-printWhoseTurn(NewNextPlayer) :- NewNextPlayer == human,
-                                write("Human player's turn."), nl.
-printWhoseTurn(NewNextPlayer) :- NewNextPlayer == computer,
-                                write("Computer player's turn."), nl.
-printWhoseTurn(_) :- write("Unknown Turn"), nl.     
-
-/**
-Function Name: printBuilds
-Purpose: Print current builds on table.
-Parameters: Builds, List of current builds.
-**/
-printBuilds([]).
-
-printBuilds(Builds) :-
-    [B1 | Rest] = Builds,
-    write("[ "), printCards(B1), write("] "),
-    printBuilds(Rest).
-
-/**
-Function Name: printSets
-Purpose: Print Sets of cards.
-Parameters: Sets, List of sets of cards.
-**/
-printSets([]).
-
-printSets(Sets) :-
-    [Set | Rest] = Sets,
-    printCards(Set),
-    printSets(Rest).
-
-/**
-Function Name: printBoard
-Purpose: Prints the current board using lists from State
-Parameters:
-    NewHumanHand, List containing cards in human's hand..
-    NewTableCards, List containing cards on the table.
-    NewComputerHand, List containing cards in computer's hand.
-**/
-printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) :- 
-        getPlayNextFromState(State, NewNextPlayer),
-        getBuildsFromState(State, Builds),
-        printWhoseTurn(NewNextPlayer),
-        write("Human Pile: "),
-        printCards(HumanPile),
-        nl,
-        write("Human Cards: "),
-        printCards(HumanHand),
-        nl,
-        write("Table Cards: "),
-        printBuilds(Builds),
-        printCards(TableCards),
-        nl,
-        write("Computer Cards: "),
-        printCards(ComputerHand),
-        nl,
-        write("Computer Pile: "),
-        printCards(ComputerPile),
-        nl,
-        write("--------------------------------"),
-        nl.
-
-/**
-Function Name: dealHumanCards
-Purpose: Deals 4 cards to the Human player
-Parameters:
-    State, List containing all variables relevant to game play.
-    GameDeck, List containing all cards in the deck.
-    NewHumanHand, Variable that will be instantiated to list of cards dealt to Human hand.
-    HNewGameDeck, Variable that will be instantiated to new deck after cards are dealt to human.
-**/
-dealHumanCards(NewGameDeck, HumanHandBeforeMove, HNewGameDeck) :- 
-        draw(CardOne, NewGameDeck, NewGameDeck1),
-        draw(CardTwo, NewGameDeck1, NewGameDeck2),
-        draw(CardThree, NewGameDeck2, NewGameDeck3),
-        draw(CardFour, NewGameDeck3, NewGameDeck4),
-        HNewGameDeck = NewGameDeck4,
-        HumanHandBeforeMove = [CardOne, CardTwo, CardThree, CardFour].
-
-/**
-Function Name: dealComputerCards
-Purpose: Deals 4 cards to the Computer player
-Parameters:
-    State, List containing all variables relevant to game play.
-    HNewGameDeck, List containing all cards in the deck after Human Cards are dealt.
-    NewComputerHand, Variable that will be instantiated to list of cards dealt to Computer hand.
-    CNewGameDeck, Variable that will be instantiated to new deck after cards are dealt to computer.
-**/
-dealComputerCards(HNewGameDeck, ComputerHandBeforeMove, CNewGameDeck) :- 
-        draw(CardOne, HNewGameDeck, NewGameDeck1),
-        draw(CardTwo, NewGameDeck1, NewGameDeck2),
-        draw(CardThree, NewGameDeck2, NewGameDeck3),
-        draw(CardFour, NewGameDeck3, NewGameDeck4),
-        CNewGameDeck = NewGameDeck4,
-        ComputerHandBeforeMove = [CardOne, CardTwo, CardThree, CardFour].
-
-/**
-Function Name: dealTableCards
-Purpose: Deals 4 cards to the Table
-Parameters:
-    State, List containing all variables relevant to game play.
-    CNewGameDeck, List containing all cards in the deck after Computer Cards are dealt.
-    NewComputerHand, Variable that will be instantiated to list of cards dealt to Computer hand.
-    TNewGameDeck, Variable that will be instantiated to new deck after cards are dealt to table.
-**/
-dealTableCards(CNewGameDeck, TableCardsBeforeMove, TNewGameDeck) :- 
-        draw(CardOne, CNewGameDeck, NewGameDeck1),
-        draw(CardTwo, NewGameDeck1, NewGameDeck2),
-        draw(CardThree, NewGameDeck2, NewGameDeck3),
-        draw(CardFour, NewGameDeck3, NewGameDeck4),
-        TNewGameDeck = NewGameDeck4,
-        TableCardsBeforeMove = [CardOne, CardTwo, CardThree, CardFour].
-
-
-/**
-FunctionName: checkHandsEmpty
-Purpose: Checks to see if both players hands are empty and re-deals cards as necessary.
-Parameters
-    HumanHand, List of Cards already in Human player's hand.
-    NewHumanHand, Variable to be instantiated to new list of cards in human's hand.
-    ComputerHand, List of Cards already in Computer player's hand.
-    NewComputerHand, Variable to be instantiated to new list of cards in computer's hand.
-    GameDeck, List of cards in Game deck
-    CNewGameDeck, List of cards in game deck after being dealt new cards.
-**/
-checkHandsEmpty(HumanHand, NewHumanHand, ComputerHand, NewComputerHand, GameDeck, CNewGameDeck) :-
-                                    HumanHand = [],
-                                    ComputerHand = [],
-                                    dealHumanCards(GameDeck, NewHumanHand, HNewGameDeck),
-                                    dealComputerCards(HNewGameDeck, NewComputerHand, CNewGameDeck).
-                                    
-checkHandsEmpty(HumanHand, NewHumanHand, ComputerHand, NewComputerHand, GameDeck, CNewGameDeck) :-
-                                    CNewGameDeck = GameDeck,      
-                                    NewHumanHand = HumanHand,
-                                    NewComputerHand = ComputerHand.
-
-/**
-Function Name: playRound
-Purpose: Begin playing current round
-Parameters: State, List containing all variables relevant to game play.
-**/
-playRound(State) :-
-                    /** Piles not being properly accessed from state. **/
-                    getHumanPileFromState(State, HumanPileBeforeMove),
-                    getComputerPileFromState(State, ComputerPileBeforeMove),
-                    getRoundNumFromState(State, RoundNum),
-                    getHumanScoreFromState(State, HumanScore),
-                    getComputerScoreFromState(State, ComputerScore),
-                    getBuildsFromState(State, BuildsBeforeMove),
-                    getTableCardsFromState(State, TableCardsBeforeMove),
-                    getHumanHandFromState(State, HumanHandBeforeMove),
-                    getComputerHandFromState(State, ComputerHandBeforeMove),
-                    getDeckFromState(State, NewGameDeck),
-                    checkHandsEmpty(HumanHandBeforeMove, HumanHandAfterCheck, ComputerHandBeforeMove, ComputerHandAfterCheck, NewGameDeck, GameDeck),
-                    printBoard(State, HumanPileBeforeMove, HumanHandAfterCheck, TableCardsBeforeMove, ComputerPileBeforeMove, ComputerHandAfterCheck),
-                    getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandAfterCheck, ComputerHandAfterCheck, HumanHand, ComputerHand, TableCards, HumanPileAfterMove, ComputerPileAfterMove),
-                    NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPileAfterMove, ComputerScore, ComputerHand, ComputerPileAfterMove, BuildsAfterMove, TableCards, NextPlayer],
-                    printBoard(NewState, HumanPileAfterMove, HumanHand, TableCards, ComputerPileAfterMove, ComputerHand),
-                    playRound(NewState).
-
-setupRound() :- shuffleDeck(NewGameDeck, GameDeckBeforeMove),
-                    dealHumanCards(GameDeckBeforeMove, HumanHandBeforeMove, HNewGameDeck),
-                    dealComputerCards(HNewGameDeck, ComputerHandBeforeMove, CNewGameDeck),
-                    dealTableCards(CNewGameDeck, TableCardsBeforeMove, TNewGameDeck),
-                    RoundNum = 0,
-                    HumanScore = 0,
-                    ComputerScore = 0,
-                    NextPlayer = human,
-                    HumanPile = [],
-                    ComputerPile = [],
-                    Builds = [],
-                    State = [RoundNum, TNewGameDeck, HumanScore, HumanHandBeforeMove, HumanPile, ComputerScore, ComputerHandBeforeMove, ComputerPile, Builds, TableCardsBeforeMove, NextPlayer],
-                    printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),                    
-                    playRound(State).
-
-/**
-Function Name: startNewTournament
-Purpose: Begins a new tournament and initializes game state.
-Algorithm: Create game state list and initialize necessary variables.
-**/
-startNewTournament() :- setupRound().
-startNewTournament() :- write("Failed to start new tournament.").
-
-/**
-Function Name: loadGame
-Purpose: Load a saved game state
-**/
-loadGame() :- write("Placeholder.").
-
-/**
-Function Name: loadOrNew
-Purpose: Parse user input and load saved game, start new tournament, or re-prompt user if they enter invalid input.
-**/
-loadOrNew(Input) :- Input == y,
-    loadGame().
-
-loadOrNew(Input) :- Input == n,
-    startNewTournament().
-
-loadOrNew(_) :- write("Invalid input."), nl,
-                start().
-
-/**
-Function Name: start
-Purpose: Starts the game flow. Allows user to input 
-**/
-start() :- write("Would you like to load a saved game?(y/n): "),
-            read(Input),
-            loadOrNew(Input).
-
+evaluateSet(State, PlayedVal, SetVal, Set, SetAfterEval) :-
+        write("Invalid set entered. Sum of set: "), 
+        write(SetVal), 
+        write(". Needed to add up to: "),
+        write(PlayedVal),
+        write(". Try again."), nl,
+        playRound(State).
