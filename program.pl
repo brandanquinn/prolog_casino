@@ -20,7 +20,7 @@ deck([
 ]).
 
 /**
-Function Name: getRoundNumFromState
+Clause Name: getRoundNumFromState
 Purpose: Pulls the RoundNum from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -30,7 +30,7 @@ getRoundNumFromState(State, _) :- State = [].
 getRoundNumFromState(State, RoundNum) :- nth0(0, State, RoundNum).
 
 /**
-Function Name: getDeckFromState
+Clause Name: getDeckFromState
 Purpose: Pulls the GameDeck from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -40,7 +40,7 @@ getDeckFromState(State, _) :- State = [].
 getDeckFromState(State, NewGameDeck) :- nth0(1, State, NewGameDeck).
 
 /**
-Function Name: getHumanScoreFromState
+Clause Name: getHumanScoreFromState
 Purpose: Pulls the human score from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -50,7 +50,7 @@ getHumanScoreFromState(State, _) :- State = [].
 getHumanScoreFromState(State, HumanScore) :- nth0(2, State, HumanScore).
 
 /**
-Function Name: getHumanHandFromState
+Clause Name: getHumanHandFromState
 Purpose: Pulls the HumanHand from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -60,7 +60,7 @@ getHumanHandFromState(State, _) :- State = [].
 getHumanHandFromState(State, HumanHand) :- nth0(3, State, HumanHand).
 
 /**
-Function Name: getHumanPileFromState
+Clause Name: getHumanPileFromState
 Purpose: Pulls the HumanPile from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -70,7 +70,7 @@ getHumanPileFromState(State, _) :- State = [].
 getHumanPileFromState(State, HumanPile) :- nth0(4, State, HumanPile).
 
 /**
-Function Name: getComputerScoreFromState
+Clause Name: getComputerScoreFromState
 Purpose: Pulls the ComputerScore from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -80,7 +80,7 @@ getComputerScoreFromState(State, _) :- State = [].
 getComputerScoreFromState(State, ComputerScore) :- nth0(5, State, ComputerScore).
 
 /**
-Function Name: getComputerHandFromState
+Clause Name: getComputerHandFromState
 Purpose: Pulls the ComputerHand from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -90,7 +90,7 @@ getComputerHandFromState(State, _) :- State = [].
 getComputerHandFromState(State, ComputerHand) :- nth0(6, State, ComputerHand).
 
 /**
-Function Name: getComputerPileFromState
+Clause Name: getComputerPileFromState
 Purpose: Pulls the ComputerPile from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -100,7 +100,7 @@ getComputerPileFromState(State, _) :- State = [].
 getComputerPileFromState(State, ComputerPile) :- nth0(7, State, ComputerPile).
 
 /**
-Function Name: getBuildsFromState
+Clause Name: getBuildsFromState
 Purpose: Pulls the Builds from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -110,7 +110,7 @@ getBuildsFromState(State, _) :- State = [].
 getBuildsFromState(State, Builds) :- nth0(8, State, Builds).
 
 /**
-Function Name: getTableCardsFromState
+Clause Name: getTableCardsFromState
 Purpose: Pulls the TableCards from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -120,7 +120,7 @@ getTableCardsFromState(State, _) :- State = [].
 getTableCardsFromState(State, TableCards) :- nth0(9, State, TableCards).
 
 /**
-Function Name: getPlayNextFromState
+Clause Name: getPlayNextFromState
 Purpose: Pulls the NextPlayer from the State List
 Parameters:
     State, List containing all variables relevant to game play.
@@ -131,7 +131,7 @@ getPlayNextFromState(State, NewNextPlayer) :- nth0(10, State, NewNextPlayer).
 
 
 /**
-Function Name: shuffledeck
+Clause Name: shuffledeck
 Purpose: Shuffle a Deck List and assign it to a variable
 Parameters: Variable to assign shuffled deck list to.
 Algorithm: 
@@ -142,7 +142,7 @@ shuffleDeck(NewGameDeck, GameDeckBeforeMove) :- deck(NewGameDeck),
                             random_permutation(NewGameDeck, GameDeckBeforeMove).
 
 /**
-Function Name: printCards
+Clause Name: printCards
 Purpose: Print the entirety of a card list 
 Parameters: Accepts a list
 Algorithm:
@@ -190,7 +190,7 @@ getValue((_, Type), Value) :-
         Value = Type.
         
 /**
-Function Name: draw
+Clause Name: draw
 Purpose: Draw a Card from the top of the deck.
 Parameters: Takes an uninstantiated Card variable and a Deck List
 Algorithm: Pulls the top card from the Deck List and assigns it to the Card variable.
@@ -320,7 +320,7 @@ dealCards(GameDeckBeforeDeal, GameDeckAfterDeal, CardList) :-
         CardList = [CardOne, CardTwo, CardThree, CardFour].
 
 /**
-Function Name: printBoard
+Clause Name: printBoard
 Purpose: Prints the current board using lists from State
 Parameters:
     NewHumanHand, List containing cards in human's hand..
@@ -352,7 +352,7 @@ printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) 
         nl.
 
 /**
-Function Name: printSets
+Clause Name: printSets
 Purpose: Print Sets of cards.
 Parameters: Sets, List of sets of cards.
 **/
@@ -366,7 +366,7 @@ printSets(Sets) :-
     printSets(Rest).
 
 /**
-Function Name: printBuilds
+Clause Name: printBuilds
 Purpose: Print current builds on table.
 Parameters: Builds, List of current builds.
 **/
@@ -378,7 +378,7 @@ printBuilds(Builds) :-
     printBuilds(Rest).
 
 /**
-Function Name: printWhoseTurn
+Clause Name: printWhoseTurn
 Purpose: Prints whose turn it is.
 Parameters: NewNextPlayer, Variable containing whose turn it is.
 **/
@@ -391,7 +391,7 @@ printWhoseTurn(NewNextPlayer) :-
 printWhoseTurn(_) :- write("Unknown Turn"), nl.   
 
 /**
-Function Name: getMove
+Clause Name: getMove
 Purpose: Get move selection from user.
 Parameters:
     State, List containing current game state.
@@ -420,7 +420,7 @@ getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMo
         trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, ComputerHandBeforeMove, ComputerHandAfterMove).
 
 /**
-Function Name: makeMove
+Clause Name: makeMove
 Purpose: Make move given user's move selection.
 Parameters:
     MoveInput, Move selected by player
@@ -475,7 +475,7 @@ whosPlayingNext(CurrentPlayer, NextPlayer) :-
         NextPlayer = human.
 
 /**
-Function Name: getSelection
+Clause Name: getSelection
 Purpose: Continuously select cards from a given list, until -1 is input.
 Parameters:
     TableCardsBeforeMove, List of cards on the table before a move is made.
@@ -510,7 +510,7 @@ getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input
         getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
 
 /**
-Function Name: getTableCardsForSets
+Clause Name: getTableCardsForSets
 Purpose: Wrapper to get cards selected for set capture by user.
 Parameters:
     TableCardsBeforeMove, List of cards to be selected from the table.
@@ -524,7 +524,7 @@ getTableCardsForSets(TableCardsBeforeMove, FinalCardsSelected) :-
         write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
 
 /**
-Function Name: getTableCardsForBuild
+Clause Name: getTableCardsForBuild
 Purpose: Wrapper to get cards selected for build by user.
 Parameters:
     TableCardsBeforeMove, List of cards to be selected from the table.
@@ -538,7 +538,7 @@ getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected) :-
         write("Cards selected from table: "), printCards(FinalCardsSelected), nl.
 
 /**
-Function Name: selectCard
+Clause Name: selectCard
 Purpose: Selects a card from a list given an idx.
 Parameters: 
     HumanHandBeforeMove/ComputerHandBeforeMove, List containing all cards in a player's hand.
@@ -551,7 +551,7 @@ selectCard(HumanHandBeforeMove, Card, Input) :- nth0(Input, HumanHandBeforeMove,
 selectCard(ComputerHandBeforeMove, Card, Input) :- nth0(Input, ComputerHandBeforeMove, Card).
 
 /**
-Function Name: removeCardFromList
+Clause Name: removeCardFromList
 Purpose: Removes given Card from list.
 Parameters:
     Card, Card to be removed from list.
@@ -565,7 +565,7 @@ removeCardsFromList(CapturedCards, TableCardsBeforeMove, TableCardsAfterMove) :-
         subtract(TableCardsBeforeMove, CapturedCards, TableCardsAfterMove).
 
 /**
-Function Name: removeSetsFromList
+Clause Name: removeSetsFromList
 Purpose: Remove captured builds from set of current builds, can be extended later for set capture
 Parameters:
     CapturedBuilds, List of Builds selected for capture.
@@ -581,7 +581,7 @@ removeSetsFromList(CapturedBuilds, BuildsBeforeMove, BuildsAfterMove) :-
         removeSetsFromList(Rest, NewBuilds, BuildsAfterMove).
 
 /**
-Function Name: flattenList
+Clause Name: flattenList
 Purpose: Flatten a 2d list of cards.
 Parameters:
     BigList, 2d List of cards to flatten.
@@ -597,7 +597,7 @@ flattenList(BigList, FlatListBefore, FlatListAfter) :-
         flattenList(Rest, NewList, FlatListAfter).
 
 /**
-Function Name: removeSetFromList
+Clause Name: removeSetFromList
 Purpose: Called by removeSetsFromList to remove each individual set from the list.
 Parameters: 
     Build, Build selected for capture.
@@ -619,7 +619,7 @@ removeSetFromList(Build, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
         append(BuildsAfterMove, [NB], NewBuilds),
         removeSetFromList(Build, Rest, NewBuilds, FinalBuilds).
 /**
-Function Name: getSetValue
+Clause Name: getSetValue
 Purpose: Get the sum value of a set of cards.
 Parameters: 
     CardList, List of cards in the set.
@@ -654,7 +654,7 @@ getPlayerHands(State, CurrentPlayer, HandAfterMove, HumanHand, ComputerHand) :-
         getHumanHandFromState(State, HumanHand).
 
 /**
-Function Name: trail
+Clause Name: trail
 Purpose: Trail a card from player's hand and add it to the table.
 Parameters:
     Card, Variable representing card to be played.
@@ -682,7 +682,7 @@ trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HandBeforeMove, Ha
 
 
 /**
-Function Name: build
+Clause Name: build
 Purpose: Make a build move.
 Paramaters:
     CardSelected, Card selected as the capture card for build.
@@ -719,7 +719,7 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         playRound(NewState).
 
 /**
-Function Name: capture
+Clause Name: capture
 Purpose: Make a capture move selected by player.
 Parameters:
     Card, Card selected by player.
@@ -764,7 +764,11 @@ capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeM
         playRound(NewState).
 
 /**
-
+Clause Name: promptSameFaceCapture
+Purpose: Prompt a user whether or not they want to capture same face cards.
+Parameters: 
+        State, list of vars in game state.
+        CapturableCards, List of capturable cards
 **/
 promptSameFaceCapture(State, CapturableCards) :- CapturableCards = [].
 promptSameFaceCapture(State, CapturableCards) :-
@@ -778,7 +782,11 @@ promptSameFaceCapture(State, CapturableCards) :-
 promptSameFaceCapture(State, CapturableCards).
 
 /**
-
+Clause Name: promptBuildCapture
+Purpose: Prompt a user whether or not they want to capture builds.
+Parameters:
+        CapturableBuilds, list of builds that can be captured.
+        CapturableBuildsAfterPrompt, uninstantiated var that will contain the list of builds captured after prompt.
 **/
 promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
         CapturableBuilds = [],
@@ -795,7 +803,15 @@ promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
         CapturableBuildsAfterPrompt = CapturableBuilds.
 
 /**
-
+Clause Name: promptSetCapture
+Purpose: Prompt a user whether or not they want to capture sets.
+Parameters:
+        State, list of variables involved in a game state.
+        CardPlayed, Card selected to be played by user.
+        TableCards, List of cards on the table.
+        CapturableCards, List of capturable cards.
+        CapturableBuilds, List of capturable builds on the table.
+        CapturableSets, Uninstantiated var that will contain all capturable sets.
 **/
 promptSetCapture(State, CardPlayed, TableCards, CapturableCards, CapturableBuilds, CapturableSets) :-
         CapturableCards = [],
@@ -817,7 +833,7 @@ promptSetCapture(State, CardPlayed, TableCards, CapturableCards, CapturabledBuil
         CapturableSets = CapturableSetsAfter.
 
 /**
-Function Name: getCapturableCards
+Clause Name: getCapturableCards
 Purpose: Find all capturable cards and report them back to player.
 Parameters:
     TableCards, List of cards on the game table.
@@ -842,7 +858,7 @@ getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCard
         getCapturableCards(Rest, CardPlayed, CapturableCardsBefore, CapturableCardsAfter).
 
 /**
-Function Name: getCapturableBuilds
+Clause Name: getCapturableBuilds
 Purpose: Get list of capturable builds on the table.
 Parameters:
     CardPlayed, Card selected to be played into the build.
@@ -866,7 +882,7 @@ getCapturableBuilds(CardPlayed, BuildsList, CapturableBuilds1, CapturableBuilds2
         getCapturableBuilds(CardPlayed, Rest, CapturableBuilds1, CapturableBuilds2).
 
 /**
-Function Name: addCapturedSetsToPile
+Clause Name: addCapturedSetsToPile
 Purpose: Adds captured builds to the player's pile.
 Paramaters:
     CapturableBuilds, List of builds captured by player.
@@ -882,7 +898,7 @@ addCapturedSetsToPile(CapturableBuilds, HumanPileBefore, HumanPileAfter) :-
         addCapturedSetsToPile(Rest, NewHumanPile, HumanPileAfter).
 
 /**
-Function Name: getCapturableSets
+Clause Name: getCapturableSets
 Purpose: Get list of capturable sets
 Parameters:
     Input, User input as to whether or not they want to continue selecting sets for capture.
@@ -910,7 +926,14 @@ getCapturableSets(_, Card, TableCardsBeforeMove, CapturableCardsBefore, Capturab
         CapturableSetsAfter = [].
 
 /**
-
+Clause Name: evaluateSet
+Purpose: Evaluate whether set entered is possible.
+Parameters:
+        State, List of variables in game state.
+        PlayedVal, Numerical value of card played.
+        SetVal, Numerical value of set of cards selected.
+        Set, List of cards selected in set.
+        SetAfterEval, Uninstantiated variable that will contain list of cards in set.
 **/
 evaluateSet(State, PlayedVal, SetVal, Set, SetAfterEval) :-
         PlayedVal = SetVal,
