@@ -169,7 +169,10 @@ printCards([Top | Rest]) :- Top = (Suit, Type),
                             printCards(Rest).
 
 /**
-
+Clause Name: getValue
+Purpose: Get the value of a card given its type.
+Parameters:
+        (_, Type), 
 **/
 getValue((_, Type), Value) :- 
         Type = x,
@@ -223,11 +226,11 @@ Clause Name: loadOrNew
 Purpose: Parse user input and load saved game, start new tournament, or re-prompt user if they enter invalid input.
 **/
 loadOrNew(Input) :- 
-        Input == y,
+        Input = y,
         loadGame().
 
 loadOrNew(Input) :- 
-        Input == n,
+        Input = n,
         startNewTournament().
 
 loadOrNew(_) :- 
@@ -494,6 +497,18 @@ makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBe
         selectCard(HumanHandBeforeMove, CardSelected, Input1),
         selectCard(HumanHandBeforeMove, CardPlayed, Input2),
         build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
+
+makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+        MoveInput = increase,
+        write("Select the card you want to sum the increased build to: "),
+        printCards(HumanHandBeforeMove),
+        read(Input1),
+        write("Select the card you want to play into the build: "),
+        printCards(HumanHandBeforeMove),
+        read(Input2),
+        selectCard(HumanHandBeforeMove, CardSelected, Input1),
+        selectCard(HumanHandBeforeMove, CardPlayed, Input2),
+        increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
 
 makeMove(_, _, _, MoveInput, _, _, _, _, _, _, _) :-
         MoveInput = exit,
@@ -882,6 +897,90 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         playRound(NewState).
 
 /**
+Clause Name: increase
+Purpose: Increase and claim an opponents build (IN PROGRESS).
+TODO: Check to make sure the build selected is opponents build, update model accordingly.
+Parameters: 
+        State, List of variables involved in game state.
+        CardSelected, Card selected to increase the build to.
+        CardPlayed, Card selected to play into the build.
+        TableCardsBeforeMove, List of cards on the game table.
+        BuildsBeforeMove, List of builds on the game table.
+**/
+increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+        getValue(CardSelected, SelectedValue),
+        getValue(CardPlayed, PlayedVal),
+        getBuildSelection(State, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease),
+        write("Selected to increase build: "), printBuilds([BuildToIncrease]), nl,
+        playRound(State).
+
+/**
+Clause Name: getBuildSelection
+Purpose: Get Build to increase selected by user.
+Parameters:
+        State, List of variables involved in current game state.
+        SelectedValue, Value of card selected aka value that build will be increased to.
+        PlayedVal, Value of card to be played into the build.
+        BuildsBeforeMove, List of builds on the table.
+        BuildToIncrease, Uninstantiated var that will contain the Build selected to increase.
+**/
+getBuildSelection(State, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease) :-
+        getBuildForUser(State, BuildsBeforeMove, BuildSelected),
+        getSetValue(BuildSelected, 0, BuildVal),
+        assessBuildValue(State, SelectedValue, PlayedVal, BuildVal),
+        BuildToIncrease = BuildSelected.
+
+/**
+Clause Name: getBuildForUser
+Purpose: Get user input for build selected, validates input and returns build selected if possible.
+Parameters: 
+        State, List of variables involved in current game state.
+        BuildsBeforeMove, List of builds on the table.
+        BuildSelected, Uninstantiated variable that will contain Build selected to increase.
+**/
+getBuildForUser(State, BuildsBeforeMove, BuildSelected) :-
+        write("Which build would you like to increase?: "),
+        printBuilds(BuildsBeforeMove),
+        read(BuildInput),
+        assessBuildInput(State, BuildsBeforeMove, BuildInput, BuildSelected).
+
+/**
+Clause Name: assessBuildInput
+Purpose: Tries to select build given user input, fails and restarts current round if invalid input.
+Parameters:
+        State, List of variables involved in current game state.
+        BuildsList, List of current builds on the table.
+        Input, Index of build selected by user.
+        BuildChosen, Uninstantiated variable that will contain Build selected to increase.
+**/
+assessBuildInput(State, BuildsList, Input, BuildChosen) :-
+        nth0(Input, BuildsList, BuildChosen).
+assessBuildInput(State, _, _, _) :-
+        write("Invalid input. Try again."), nl,
+        playRound(State).
+
+/**
+Clause Name: assessBuildValue
+Purpose: Checks to make sure build selected can be increased and claimed with cards involved.
+Parameters:
+        State, List of variables involved in current game state.
+        SelectedValue, Value of card selected to sum the increased build to.
+        PlayedVal, Value of card played into the build.
+        BuildVal, Value of the current build selected.
+**/
+assessBuildValue(State, SelectedValue, PlayedVal, BuildVal) :-
+        SelectedValue is PlayedVal + BuildVal.
+assessBuildValue(State, SelectedValue, PlayedVal, BuildVal) :-
+        write("Cannot increase build. Build with value: "),
+        write(BuildVal),
+        write(". With added value of: "),
+        write(PlayedVal),
+        write(". Does not sum to card selected: "), nl,
+        write(SelectedValue),
+        playRound(State).
+
+
+/**
 Clause Name: capture
 Purpose: Make a capture move selected by player.
 Parameters:
@@ -894,7 +993,7 @@ Parameters:
     HumanPileAfterMove, Uninstantiated variable that will contain list of cards in pile after move is made.
 **/
 
-/** Can capture same face cards, builds, and sets**/
+/** Can capture same face cards, builds, and sets **/
 capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
         /** Same face capture **/
         getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
