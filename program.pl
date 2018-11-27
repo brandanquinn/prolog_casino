@@ -489,6 +489,11 @@ makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBe
         selectCard(HumanHandBeforeMove, CardPlayed, Input2),
         build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
 
+makeMove(_, _, _, MoveInput, _, _, _, _, _, _, _) :-
+        MoveInput = exit,
+        write("Thanks for playing! Exiting game."), nl,
+        halt().
+
 /**
 Clause Name: whosPlayingNext
 Purpose: Get player of next turn.
@@ -657,6 +662,13 @@ Parameters:
     FinalVal, Uninstantiated variable used to pass the updated Value through.
 **/
 getSetValue([], Value, FinalVal) :- FinalVal = Value.
+getSetValue(CardList, Value, FinalVal) :-
+        [Card | Rest] = CardList,
+        (_, Type) = Card,
+        Type = a,
+        NewVal is Value + 1,
+        getSetValue(Rest, NewVal, FinalVal).
+
 getSetValue(CardList, Value, FinalVal) :-
         [Card | Rest] = CardList,
         getValue(Card, CardVal),
