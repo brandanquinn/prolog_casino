@@ -742,6 +742,9 @@ Parameters:
     HumanHandAfterMove/ComputerHandAfterMove, Variable to be instantiated to list of cards in hand after card is played.
 **/
 trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HandBeforeMove, HandAfterMove) :- 
+        getBuildOwnersFromState(State, BuildOwners),
+        getPlayNextFromState(State, CurrentPlayer),
+        validateTrail(State, Card, TableCardsBeforeMove, BuildOwners, CurrentPlayer),
         append(TableCardsBeforeMove, [Card], TableCardsAfterMove),
         removeCardFromList(Card, HandBeforeMove, HandAfterMove),
         write("Player has selected to trail:"), printCards([Card]), nl,     
@@ -751,14 +754,87 @@ trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HandBeforeMove, Ha
         getHumanPileFromState(State, HumanPile),
         getComputerScoreFromState(State, ComputerScore),
         getComputerPileFromState(State, ComputerPile),
-        getPlayNextFromState(State, CurrentPlayer),
         whosPlayingNext(CurrentPlayer, NextPlayer),
         getPlayerHands(State, CurrentPlayer, HandAfterMove, HumanHand, ComputerHand),
         getBuildsFromState(State, Builds),
-        getBuildOwnersFromState(State, BuildOwners),
         NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, BuildOwners, TableCardsAfterMove, NextPlayer],
         playRound(NewState).
 
+/**
+Clause Name: validateTrail
+Purpose: Check whether trail move can be made with selected card. Temporarily allows computer to bypass for testing.
+Parameters:
+        State, List of variables in game state.
+        CardSelected, Card selected to be trailed by player.
+        TableCards, List of cards on the table to check against.
+        BuildOwners, List of build owners.
+        CurrentPlayer, Player currently making move.
+**/
+validateTrail(State, CardSelected, TableCards, BuildOwners, CurrentPlayer) :-
+        CurrentPlayer = computer.
+validateTrail(State, CardSelected, TableCards, BuildOwners, CurrentPlayer) :-
+        checkMatchingLooseCards(State, CardSelected, TableCards),
+        checkBuildOwnership(State, BuildOwners, CurrentPlayer).
+
+/**
+Clause Name: checkMatchingLooseCards
+Purpose: Check whether there are any matching loose cards on the table.
+Parameters:
+        State, List of variables in game state.
+        Type, Type of card selected to trail.
+        TableCards, List of cards on the table.
+**/
+checkMatchingLooseCards(State, (_, Type), []).
+checkMatchingLooseCards(State, (_, Type), TableCards) :-
+        [TableCard | Rest] = TableCards,
+        (_, TableCardType) = TableCard,
+        assessType(State, Type, TableCardType),
+        checkMatchingLooseCards(State, (_, Type), Rest).
+
+/**
+Clause Name: assessType
+Purpose: Checks if type of card selected is equal to type of card on table. Prints error message and restarts round if true.
+Parameters:
+        State, List of variables in game state.
+        PlayedType, Type of card selected for trail.
+        TableCardType, Type of card on table.
+**/
+assessType(State, PlayedType, TableCardType) :-
+        PlayedType \= TableCardType.
+
+assessType(State, PlayedType, TableCardType) :-
+        Type = TableCardType,
+        write("Trail move cannot be made. Matching loose card exists."), nl,
+        playRound(State).
+
+/**
+Clause Name: checkBuildOwnership
+Purpose: Checks to see if player currently owns a build.
+Parameters:
+        State, List of variables in game state.
+        BuildOwners, List of current build owners.
+        CurrentPlayer, identity of player currently making move.
+**/
+checkBuildOwnership(State, [], CurrentPlayer).
+checkBuildOwnership(State, BuildOwners, CurrentPlayer) :-
+        [Owner | Rest] = BuildOwners,
+        assessOwnership(State, Owner, CurrentPlayer),
+        checkBuildOwnership(State, Rest, CurrentPlayer).
+
+/**
+Clause Name: assessOwnership
+Purpose: Checks to see if player is build owner, prints error message and restarts round if true.
+Parameters:
+        State, List of variables in game state.
+        BuildOwner, Owner of build on table.
+        CurrentPlayer, identity of player currently making move to check against BuildOwner.
+**/
+assessOwnership(State, BuildOwner, CurrentPlayer) :-
+        BuildOwner \= CurrentPlayer.
+assessOwnership(State, BuildOwner, CurrentPlayer) :-
+        BuildOwner = CurrentPlayer,
+        write("Trail move cannot be made. You currently own a build."), nl,
+        playRound(State).
 
 /**
 Clause Name: build
