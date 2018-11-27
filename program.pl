@@ -110,6 +110,16 @@ getBuildsFromState(State, _) :- State = [].
 getBuildsFromState(State, Builds) :- nth0(8, State, Builds).
 
 /**
+Clause Name: getBuildOwnersFromState
+Purpose: Pulls the BuildOwners List var from the State List
+Parameters:
+        State, List containing all variables relevant to game play.
+        BuildOwners, Variable to be instantiated to BuildOwners from State.
+**/
+getBuildOwnersFromState(State, _) :- State = [].
+getBuildOwnersFromState(State, BuildOwners) :- nth0(9, State, BuildOwners).
+
+/**
 Clause Name: getTableCardsFromState
 Purpose: Pulls the TableCards from the State List
 Parameters:
@@ -117,7 +127,7 @@ Parameters:
     TableCards, Variable to be instantiated to TableCards from State.
 **/
 getTableCardsFromState(State, _) :- State = [].
-getTableCardsFromState(State, TableCards) :- nth0(9, State, TableCards).
+getTableCardsFromState(State, TableCards) :- nth0(10, State, TableCards).
 
 /**
 Clause Name: getPlayNextFromState
@@ -127,7 +137,7 @@ Parameters:
     NewNextPlayer, Variable to be instantiated to NextPlayer from State.
 **/
 getPlayNextFromState(State, _) :- State = [].
-getPlayNextFromState(State, NewNextPlayer) :- nth0(10, State, NewNextPlayer).
+getPlayNextFromState(State, NewNextPlayer) :- nth0(11, State, NewNextPlayer).
 
 
 /**
@@ -255,7 +265,8 @@ setupRound() :-
         HumanPile = [],
         ComputerPile = [],
         Builds = [],
-        State = [RoundNum, TNewGameDeck, HumanScore, HumanHandBeforeMove, HumanPile, ComputerScore, ComputerHandBeforeMove, ComputerPile, Builds, TableCardsBeforeMove, NextPlayer],
+        BuildOwners = [],
+        State = [RoundNum, TNewGameDeck, HumanScore, HumanHandBeforeMove, HumanPile, ComputerScore, ComputerHandBeforeMove, ComputerPile, Builds, BuildOwners, TableCardsBeforeMove, NextPlayer],
         printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),                    
         playRound(State).
 
@@ -271,13 +282,14 @@ playRound(State) :-
         getHumanScoreFromState(State, HumanScore),
         getComputerScoreFromState(State, ComputerScore),
         getBuildsFromState(State, BuildsBeforeMove),
+        getBuildOwnersFromState(State, BuildOwners),
         getTableCardsFromState(State, TableCardsBeforeMove),
         getHumanHandFromState(State, HumanHandBeforeMove),
         getComputerHandFromState(State, ComputerHandBeforeMove),
         getDeckFromState(State, NewGameDeck),
         getPlayNextFromState(State, NextPlayer),
         checkHandsEmpty(HumanHandBeforeMove, HumanHandAfterCheck, ComputerHandBeforeMove, ComputerHandAfterCheck, NewGameDeck, GameDeck),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterCheck, HumanPileBeforeMove, ComputerScore, ComputerHandAfterCheck, ComputerPileBeforeMove, BuildsBeforeMove, TableCardsBeforeMove, NextPlayer],
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterCheck, HumanPileBeforeMove, ComputerScore, ComputerHandAfterCheck, ComputerPileBeforeMove, BuildsBeforeMove, BuildOwners, TableCardsBeforeMove, NextPlayer],
         printBoard(NewState, HumanPileBeforeMove, HumanHandAfterCheck, TableCardsBeforeMove, ComputerPileBeforeMove, ComputerHandAfterCheck),
         getMove(NewState, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandAfterCheck, ComputerHandAfterCheck, HumanHand, ComputerHand, TableCards, HumanPileAfterMove, ComputerPileAfterMove).
 
@@ -331,6 +343,7 @@ printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) 
         write("--------------------------------"), nl,
         getPlayNextFromState(State, NewNextPlayer),
         getBuildsFromState(State, Builds),
+        getBuildOwnersFromState(State, BuildOwners),
         printWhoseTurn(NewNextPlayer),
         write("Human Pile: "),
         printCards(HumanPile),
@@ -348,6 +361,8 @@ printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) 
         write("Computer Pile: "),
         printCards(ComputerPile),
         nl,
+        write("Build Owners: "),
+        printBuildOwners(Builds, BuildOwners), nl,
         write("--------------------------------"),
         nl.
 
@@ -361,9 +376,9 @@ printSets([[]]).
 printSets([]).
 
 printSets(Sets) :-
-    [Set | Rest] = Sets,
-    printCards(Set),
-    printSets(Rest).
+        [Set | Rest] = Sets,
+        printCards(Set),
+        printSets(Rest).
 
 /**
 Clause Name: printBuilds
@@ -373,9 +388,24 @@ Parameters: Builds, List of current builds.
 printBuilds([]).
 
 printBuilds(Builds) :-
-    [B1 | Rest] = Builds,
-    write("[ "), printCards(B1), write("] "),
-    printBuilds(Rest).
+        [B1 | Rest] = Builds,
+        write("[ "), printCards(B1), write("] "),
+        printBuilds(Rest).
+
+/**
+Clause Name: printBuildOwners
+Purpose: Print builds and their owners
+Parameters: 
+        Builds, List of current builds.
+        BuildOwners, List of current build owners.
+**/
+printBuildOwners([], []).
+
+printBuildOwners(Builds, BuildOwners) :-
+        [B1 | RestOfBuilds] = Builds,
+        [Owner1 | RestOfOwners] = BuildOwners,
+        write("[ "), printCards(B1), write("] "), write(Owner1), write(" "),
+        printBuildOwners(RestOfBuilds, RestOfOwners).
 
 /**
 Clause Name: printWhoseTurn
@@ -634,6 +664,42 @@ getSetValue(CardList, Value, FinalVal) :-
         getSetValue(Rest, NewVal, FinalVal).
 
 /**
+Clause Name: indexOf
+Purpose: Finds index of a given element in a list, Index of -1 provided if element not found.
+Parameters:
+        List, Given list to locate element.
+        Element, Element we are looking for.
+        Index, Uninstantiated variable to give index.
+**/
+indexOf([Element | _], Element, 0). % We found the element
+
+indexOf([], _, Index) :- Index = -1.
+
+indexOf([_ | Rest], Element, Index):-
+        indexOf(Rest, Element, Index1),
+        Index is Index1 + 1.
+
+/**
+Clause Name: removeBuildOwners
+Purpose: Locates and removes build owners from list after a build is captured.
+Parameters:
+        CapturedBuilds, List of builds selected for capture by player.
+        BuildsBeforeMove, List of current builds on the table before capture move is made.
+        BuildOwners, List of current build owners.
+        NewBuildOwners, Uninstantiated variable to pass new list of build owners through.
+**/
+removeBuildOwners(CapturedBuilds, BuildsBeforeMove, BuildOwners, NewBuildOwners) :-
+        CapturedBuilds = [],
+        NewBuildOwners = BuildOwners.
+
+removeBuildOwners(CapturedBuilds, BuildsBeforeMove, BuildOwners, NewBuildOwners) :-
+        [B1 | Rest] = CapturedBuilds,
+        indexOf(BuildsBeforeMove, B1, Index),
+        nth0(Index, BuildOwners, _, RemainingBuildOwners),
+        removeBuildOwners(Rest, BuildsBeforeMove, RemainingBuildOwners, NewBuildOwners).
+        
+
+/**
 Clause Name: getPlayerHands
 Purpose: Given a current player and a list of cards after move is made, determine whether to update the computer player or the human players hand.
 Parameters:
@@ -677,7 +743,8 @@ trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HandBeforeMove, Ha
         whosPlayingNext(CurrentPlayer, NextPlayer),
         getPlayerHands(State, CurrentPlayer, HandAfterMove, HumanHand, ComputerHand),
         getBuildsFromState(State, Builds),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, TableCardsAfterMove, NextPlayer],
+        getBuildOwnersFromState(State, BuildOwners),
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, BuildOwners, TableCardsAfterMove, NextPlayer],
         playRound(NewState).
 
 
@@ -706,6 +773,9 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
         removeCardsFromList(BuildCardList, TableCardsBeforeMove, TableCardsAfterMove),
         append(BuildsBeforeMove, [BuildCardList], BuildsAfterMove),
+        getBuildOwnersFromState(State, BuildOwners),
+        getPlayNextFromState(State, CurrentPlayer),
+        append(BuildOwners, [CurrentPlayer], NewBuildOwners),
         getRoundNumFromState(State, RoundNum),
         getDeckFromState(State, GameDeck),
         getHumanScoreFromState(State, HumanScore),
@@ -713,9 +783,8 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         getComputerScoreFromState(State, ComputerScore),
         getComputerHandFromState(State, ComputerHand),
         getComputerPileFromState(State, ComputerPile),
-        getPlayNextFromState(State, CurrentPlayer),
         whosPlayingNext(CurrentPlayer, NextPlayer),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, TableCardsAfterMove, NextPlayer],
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, NewBuildOwners, TableCardsAfterMove, NextPlayer],
         playRound(NewState).
 
 /**
@@ -739,9 +808,12 @@ capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeM
         removeCardsFromList(CapturableCardsAfter, TableCardsBeforeMove, TableCardsAfterSameVal),
         write("Player has selected to capture: "), printCards(CapturableCardsAfter), write("with card:"), printCards([Card]), nl,
         /** Build capture **/
+        getBuildOwnersFromState(State, BuildOwners),
         getCapturableBuilds(Card, BuildsBeforeMove, CapturableBuilds1, CapturableBuilds2),
         promptBuildCapture(CapturableBuilds2, CapturedBuilds),
         write("Player will also capture: "), printBuilds(CapturedBuilds), nl,
+        % Issue here when more than one build is being captured at once.
+        removeBuildOwners(CapturedBuilds, BuildsBeforeMove, BuildOwners, NewBuildOwners),
         removeSetsFromList(CapturedBuilds, BuildsBeforeMove, BuildsAfterMove),
         /** Set capture **/
         promptSetCapture(State, Card, TableCardsAfterSameVal, CapturableCardsAfter, CapturedBuilds, CapturableSets),
@@ -760,7 +832,7 @@ capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeM
         getComputerPileFromState(State, ComputerPile),
         getPlayNextFromState(State, CurrentPlayer),
         whosPlayingNext(CurrentPlayer, NextPlayer),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPileAfterMove, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, TableCardsAfterMove, NextPlayer],
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPileAfterMove, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, NewBuildOwners, TableCardsAfterMove, NextPlayer],
         playRound(NewState).
 
 /**
