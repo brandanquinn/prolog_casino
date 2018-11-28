@@ -706,8 +706,6 @@ Parameters:
 **/
 indexOf([Element | _], Element, 0). % We found the element
 
-indexOf([], _, Index) :- Index = -1.
-
 indexOf([_ | Rest], Element, Index):-
         indexOf(Rest, Element, Index1),
         Index is Index1 + 1.
@@ -898,8 +896,7 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
 
 /**
 Clause Name: increase
-Purpose: Increase and claim an opponents build (IN PROGRESS).
-TODO: Check to make sure the build selected is opponents build, update model accordingly.
+Purpose: Increase and claim an opponents build
 Parameters: 
         State, List of variables involved in game state.
         CardSelected, Card selected to increase the build to.
@@ -911,8 +908,30 @@ increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterM
         getValue(CardSelected, SelectedValue),
         getValue(CardPlayed, PlayedVal),
         getBuildSelection(State, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease),
-        write("Selected to increase build: "), printBuilds([BuildToIncrease]), nl,
-        playRound(State).
+        write("Selected to increase build: "), printBuilds([BuildToIncrease]),
+        write(". By playing card: "), printCards([CardPlayed]), nl,
+        % make sure build is owned by opponent
+        getPlayNextFromState(State, CurrentPlayer),
+        getBuildOwnersFromState(State, BuildOwners),
+        validateBuild(State, BuildToIncrease, BuildsBeforeMove, BuildOwners, CurrentPlayer),
+        % update build
+        indexOf(BuildsBeforeMove, BuildToIncrease, IndexOfBuild),
+        increaseBuild(CardPlayed, BuildToIncrease, IndexOfBuild, CurrentPlayer, BuildOwners, IncreasedBuild, NewBuildOwners),
+        write("New build of: "), printBuilds([IncreasedBuild]),
+        write(". Has been created and is now owned by: "), write(CurrentPlayer), nl,
+        % update model
+        replaceElement(IndexOfBuild, BuildsBeforeMove, IncreasedBuild, BuildsAfterMove),
+        removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
+        getRoundNumFromState(State, RoundNum),
+        getDeckFromState(State, GameDeck),
+        getHumanPileFromState(State, HumanPile),
+        getHumanScoreFromState(State, HumanScore),
+        getComputerHandFromState(State, ComputerHand),
+        getComputerPileFromState(State, ComputerPile),
+        getComputerScoreFromState(State, ComputerScore),
+        whosPlayingNext(CurrentPlayer, NextPlayer),
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, NewBuildOwners, TableCardsBeforeMove, NextPlayer],
+        playRound(NewState).
 
 /**
 Clause Name: getBuildSelection
@@ -975,9 +994,68 @@ assessBuildValue(State, SelectedValue, PlayedVal, BuildVal) :-
         write(BuildVal),
         write(". With added value of: "),
         write(PlayedVal),
-        write(". Does not sum to card selected: "), nl,
-        write(SelectedValue),
+        write(". Does not sum to card selected: "),
+        write(SelectedValue), nl,
         playRound(State).
+
+/**
+Clause Name: validateBuild
+Purpose: Make sure that build selected for increase belongs to opponent
+Parameters:
+        State, List of variables involved in current game state.
+        BuildSelected, Build selected by player to increase.
+        CurrentBuilds, List of builds currently on the table.
+        BuildOwners, List of build owners.
+        CurrentPlayer, Player currently making move.
+**/
+validateBuild(State, BuildSelected, CurrentBuilds, BuildOwners, CurrentPlayer) :-
+        indexOf(CurrentBuilds, BuildSelected, Index), 
+        nth0(Index, BuildOwners, Owner),
+        checkIsOpponentsBuild(State, CurrentPlayer, Owner).
+
+/**
+Clause Name: checkIsOpponentsBuild
+Purpose: Check to see if build selected belongs to opponent.
+Parameters:
+        State, List of variables involved in current game state.
+        CurrentPlayer, Player currently making move.
+        Owner, Player that owns the build selected.
+**/
+checkIsOpponentsBuild(State, CurrentPlayer, Owner) :-
+        CurrentPlayer \= Owner.
+
+checkIsOpponentsBuild(State, _, _) :-
+        write("This build belongs to you, increase move cannot be made. Try again."), nl,
+        playRound(State).
+
+/**
+Clause Name: replaceElement
+Purpose: Utility function to replace an element of a list and return the new list.
+Parameters:
+        Index, index of element you wish to replace.
+        List, List of elements you wish to change.
+        Element, Element that you want to replace with.
+        NewList, Uninstantiated variable to contain the new list of elements.
+**/
+replaceElement(Index, List, Element, NewList) :-
+        nth0(Index, List, _, R),
+        nth0(Index, NewList, Element, R).
+
+/**
+Clause Name: increaseBuild
+Purpose: Change the build selected for increase and update the build owners list after selection is validated.
+Parameters:
+        CardPlayed, Card played into build.
+        BuildSelected, Build selected to increase.
+        IndexOfBuild, Index in the build list of the build selected; used to update the build owners list.
+        CurrentPlayer, Player currently making move.
+        BuildOwners, List of build onwers.
+        NewBuild, New build after CardPlayed is added to build.
+        NewBuildOwners, New build owners list after ownership is changed.
+**/
+increaseBuild(CardPlayed, BuildSelected, IndexOfBuild, CurrentPlayer, BuildOwners, NewBuild, NewBuildOwners) :-
+        append(BuildSelected, [CardPlayed], NewBuild),
+        replaceElement(IndexOfBuild, BuildOwners, CurrentPlayer, NewBuildOwners).
 
 
 /**
