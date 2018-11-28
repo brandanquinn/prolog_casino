@@ -398,7 +398,7 @@ printBuilds([]).
 
 printBuilds(Builds) :-
         [B1 | Rest] = Builds,
-        write("[ "), printCards(B1), write("] "),
+        write(B1), write(" "),
         printBuilds(Rest).
 
 /**
@@ -413,7 +413,7 @@ printBuildOwners([], []).
 printBuildOwners(Builds, BuildOwners) :-
         [B1 | RestOfBuilds] = Builds,
         [Owner1 | RestOfOwners] = BuildOwners,
-        write("[ "), printCards(B1), write("] "), write(Owner1), write(" "),
+        write(B1), write(" "), write(Owner1), write(" "),
         printBuildOwners(RestOfBuilds, RestOfOwners).
 
 /**
@@ -868,7 +868,33 @@ Paramaters:
     HumanPileBeforeMove, List of cards in human player's pile.
     HumanPileAfterMove, Uninstantiated list of cards in human player's pile after move is made.
 **/
-
+build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+        BuildsBeforeMove \= [],
+        getPlayNextFromState(State, CurrentPlayer),
+        getBuildOwnersFromState(State, BuildOwners),
+        extendingBuild(CardSelected, CurrentPlayer, BuildsBeforeMove, BuildOwners, BuildFound),
+        write("Player has selected to extend this build: "), printBuilds([BuildFound]),
+        write("to a multiple build by playing card: "), printCards([CardPlayed]), nl,
+        getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected),
+        append(FinalCardsSelected, [CardPlayed], BuildCardList),
+        getSetValue(BuildCardList, 0, BuildVal),
+        validateBuildCreated(State, BuildVal, SelectedValue),
+        write("Creating build of: [ "), printBuilds([BuildFound, BuildCardList]), write("]"), nl,
+        % update model
+        updateBuildList(BuildFound, BuildCardList, BuildsBeforeMove, BuildsIn, BuildsAfterMove),
+        removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
+        removeCardsFromList(BuildCardList, TableCardsBeforeMove, TableCardsAfterMove),
+        getRoundNumFromState(State, RoundNum),
+        getDeckFromState(State, GameDeck),
+        getHumanScoreFromState(State, HumanScore),
+        getHumanPileFromState(State, HumanPile),
+        getComputerScoreFromState(State, ComputerScore),
+        getComputerHandFromState(State, ComputerHand),
+        getComputerPileFromState(State, ComputerPile),
+        whosPlayingNext(CurrentPlayer, NextPlayer),
+        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, BuildOwners, TableCardsAfterMove, NextPlayer],
+        playRound(NewState).
+        
 build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
         getValue(CardSelected, SelectedValue),
         getValue(CardPlayed, PlayedValue),
@@ -894,6 +920,84 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, NewBuildOwners, TableCardsAfterMove, NextPlayer],
         playRound(NewState).
 
+extendingBuild(CardSelected, CurrentPlayer, BuildsList, BuildOwners, BuildFound) :-
+        % iterate through builds list
+        % get list of builds that belong to current player
+        % find a build in that updated list whos value is equal to CardSelected
+        getPlayerOwnedBuilds(BuildsList, CurrentPlayer, BuildOwners, [], OwnedBuilds),
+        findBuildWithSameVal(CardSelected, OwnedBuilds, [], PossibleBuild),
+        BuildFound = PossibleBuild.
+
+/**
+Clause Name: getPlayerOwnedBuilds
+Purpose: Find list of current builds owned by the player making move.
+Parameters:
+        BuildsList, List of all builds on the table.
+        CurrentPlayer, Player currently making move.
+        BuildOwners, List of current build owners.
+        BuildsIn, Uninstantiated var to track list of builds throughout clauses runtime.
+        BuildsOut, Uninstantiated var to send data back through the clause.
+**/
+getPlayerOwnedBuilds([], _, [], BuildsIn, BuildsOut) :-
+        BuildsOut = BuildsIn.
+
+getPlayerOwnedBuilds(BuildsList, CurrentPlayer, BuildOwners, BuildsIn, BuildsOut) :-
+        [Build | RestOfBuilds] = BuildsList,
+        [Owner | RestOfOwners] = BuildOwners,
+        isBuildOwnedByPlayer(CurrentPlayer, Owner, Build, BuildsIn, AvailBuilds),
+        getPlayerOwnedBuilds(RestOfBuilds, CurrentPlayer, RestOfOwners, AvailBuilds, BuildsOut).
+
+/**
+Clause Name: isBuildOwnedByPlayer
+Purpose: Check to see if build is owned by player making move. Adds it to current avail builds list if true.
+Parameters:
+        CurrentPlayer, Player currently making move.
+        Owned, Owner of currently checked build.
+        BuildIn, Build in question.
+        CurrentBuildsList, Current list of builds owned by player.
+        BuildsOut, Uninstantiated var that will contain new list of builds after checking ownership.
+**/
+isBuildOwnedByPlayer(CurrentPlayer, Owner, BuildIn, CurrentBuildsList, BuildsOut) :-
+        CurrentPlayer = Owner,
+        append(CurrentBuildsList, [BuildIn], BuildsOut).
+
+isBuildOwnedByPlayer(_, _, _, CurrentBuildsList, BuildsOut) :-
+        BuildsOut = CurrentBuildsList.
+
+/**
+Clause Name: findBuildWithSameVal
+Purpose: Attempts to find a build with the same value as the card selected. There will never be a case where you have 2 builds with the same value - they will have to be a multiple build.
+Parameters:
+        CardSelected, Card selected to sum build to.
+        BuildsList, List of builds currently on the table.
+        CurrentBuild, Build in question.
+        PossibleBuild, Uninstantiated var to return possible builds.
+**/
+findBuildWithSameVal(_, _, CheckedBuild, PossibleBuild) :-
+        CheckedBuild \= [],
+        PossibleBuild = CheckedBuild.
+
+findBuildWithSameVal(CardSelected, BuildsList, CurrentBuild, PossibleBuild) :-
+        getValue(CardSelected, SelectedValue),
+        [Build | Rest] = BuildsList,
+        getSetValue(Build, 0, BuildValue),
+        checkBuildValue(SelectedValue, BuildValue, Build, CheckedBuild),
+        findBuildWithSameVal(CardSelected, Rest, CheckedBuild, PossibleBuild).
+
+/**
+Clause Name: checkBuildValue
+Purpose: Checks to see if build in question has same value as card selected.
+Parameters:
+        SelectedValue, Value of card selected.
+        BuildValue, Value that build sums to.
+        CurrentBuild, Build in question.
+        PossibleBuild, Uninstantiated var to return current build if it matches selected value, else it will be [].
+**/
+checkBuildValue(SelectedValue, BuildValue, CurrentBuild, PossibleBuild) :-
+        SelectedValue = BuildValue,
+        PossibleBuild = CurrentBuild.
+checkBuildValue(_, _, _, PossibleBuild) :- PossibleBuild = [].
+
 /**
 Clause Name: validateBuildCreated
 Purpose: Make sure build selected totals to selected card value correctly. Restarts round with current gamestate otherwise.
@@ -910,6 +1014,41 @@ validateBuildCreated(State, BuildVal, SelectedValue) :-
         write(". Needs to total to: "),
         write(SelectedValue), nl,
         playRound(State).
+
+/**
+Clause Name: updateBuildList
+Purpose: Update list of current builds after extending a single build to a multi build.
+Parameters:
+        BuildToExtend, Build selected to extend to a multiple build.
+        NewBuild, New build created to extend with.
+        BuildList, List of current builds on the table.
+        BuildsIn, Uninstantiated var to pass build list within clause.
+        BuildsOut, Uninstantiated var to pass final build list back through clause.
+**/
+updateBuildList(_, _, [], BuildsIn, BuildsOut) :- BuildsOut = BuildsIn.
+updateBuildList(BuildToExtend, NewBuild, BuildList, BuildsIn, BuildsOut) :-
+        % iterate through list of builds until BuildToExtend is Found, and append New Build
+        [Build | Rest] = BuildList,
+        checkBuildEquality(Build, BuildToExtend, NewBuild, BuildAfterCheck),
+        append(BuildsIn, [BuildAfterCheck], CurrentBuildList),
+        updateBuildList(BuildToExtend, NewBuild, Rest, CurrentBuildList, BuildsOut).
+
+/**
+Clause Name: checkBuildEquality
+Purpose: While iterating through current build list, checks to see if a build in that list is equal to the one found for extending earlier.
+If it is the correct build, the new build is appended to it and send back to continue iteration. If it is not, it simply returns the original build.
+Parameters:
+        Build, Build found via iteration through list.
+        BuildToExtend, Build found to extend earlier.
+        NewBuild, Build created by player to extend with.
+        BuildOut, Uninstantiated var that is used to send updated build back through clause.
+
+**/
+checkBuildEquality(Build, BuildToExtend, NewBuild, BuildOut) :-
+        Build = BuildToExtend,
+        append([Build], [NewBuild], BuildOut).
+
+checkBuildEquality(Build, _, NewBuild, BuildOut) :- BuildOut = [Build].
 
 /**
 Clause Name: increase
