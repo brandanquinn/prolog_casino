@@ -875,7 +875,7 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected),
         append(FinalCardsSelected, [CardPlayed], BuildCardList),
         getSetValue(BuildCardList, 0, BuildVal),
-        BuildVal = SelectedValue,
+        validateBuildCreated(State, BuildVal, SelectedValue),
         write("Creating build of: [ "), printCards(BuildCardList), write("]"), nl,
         removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
         removeCardsFromList(BuildCardList, TableCardsBeforeMove, TableCardsAfterMove),
@@ -893,6 +893,23 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         whosPlayingNext(CurrentPlayer, NextPlayer),
         NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, NewBuildOwners, TableCardsAfterMove, NextPlayer],
         playRound(NewState).
+
+/**
+Clause Name: validateBuildCreated
+Purpose: Make sure build selected totals to selected card value correctly. Restarts round with current gamestate otherwise.
+Parameters:
+        State, List of variables involved in current game state.
+        BuildVal, Total value of all cards in build created.
+        SelectedValue, Value that build must sum to in order to be created.
+**/
+validateBuildCreated(State, BuildVal, SelectedValue) :-
+        BuildVal = SelectedValue.
+validateBuildCreated(State, BuildVal, SelectedValue) :-
+        write("Build cannot be created. Set of cards selected totals to: "),
+        write(BuildVal),
+        write(". Needs to total to: "),
+        write(SelectedValue), nl,
+        playRound(State).
 
 /**
 Clause Name: increase
