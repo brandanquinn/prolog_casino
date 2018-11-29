@@ -257,6 +257,9 @@ Purpose: Initializes new round.
 Algorithm: Shuffle deck, deal cards and create initial game state list.
 **/
 setupRound() :- 
+        write("Call the coin toss to go first! (h/t): "),
+        read(CoinTossInput),
+        coinToss(CoinTossInput, NextPlayer),
         shuffleDeck(NewGameDeck, GameDeckBeforeMove),
         dealCards(GameDeckBeforeMove, HNewGameDeck, HumanHandBeforeMove),
         dealCards(HNewGameDeck, CNewGameDeck, ComputerHandBeforeMove),
@@ -264,7 +267,6 @@ setupRound() :-
         RoundNum = 0,
         HumanScore = 0,
         ComputerScore = 0,
-        NextPlayer = human,
         HumanPile = [],
         ComputerPile = [],
         Builds = [],
@@ -272,6 +274,52 @@ setupRound() :-
         State = [RoundNum, TNewGameDeck, HumanScore, HumanHandBeforeMove, HumanPile, ComputerScore, ComputerHandBeforeMove, ComputerPile, Builds, BuildOwners, TableCardsBeforeMove, NextPlayer],
         printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),                    
         playRound(State).
+
+/**
+Clause Name: coinToss
+Purpose: Tosses coin and checks if player called it correctly. If true, they go first. Else computer goes first.
+Parameters:
+        Input, Heads or Tails call by player.
+        NextPlayer, Player that will go first depending on result of coin toss.
+**/
+coinToss(Input, NextPlayer) :-
+        verifyCall(Input),
+        Odds = [h, t],
+        random_permutation(Odds, Flip),
+        assessCall(Input, Flip, NextPlayer).
+
+/**
+Clause Name: verifyCall
+Purpose: Verify that coin toss input is correct.
+Parameters:
+        Input, Coin toss call by player.
+**/
+verifyCall(Input) :-
+        Input = h.
+
+verifyCall(Input) :-
+        Input = t.
+
+verifyCall(_) :-
+        write("Invalid input for coin toss. Try again."), nl,
+        setupRound().
+
+/**
+Clause Name: assessCall
+Purpose: Checks to see if player's call was correct or not, sends back player going first.
+Paramaters:
+        Call, Verified coin toss call by player.
+        FlipResult, After coin toss is simulated - this represents the result of the flip.
+        NextPlayer, Player who will go first depending on result of toss.
+**/
+assessCall(Call, [FlipResult | _], NextPlayer) :-
+        Call = FlipResult,
+        write("Congrats, you won the coin toss!"), nl,
+        NextPlayer = human.
+
+assessCall(_, _, NextPlayer) :-
+        write("Unfortunately you've lost the coin toss."), nl,
+        NextPlayer = computer.
 
 /**
 Clause Name: playRound
