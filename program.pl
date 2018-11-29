@@ -19,6 +19,9 @@ deck([
     (c, 2), (c, 2), (c, 3), (c, 4), (c, 5), (c, 6), (c, 7), (c, 8), (c, 9), (c, x), (c, j), (c, q), (c, k), (c, a)
 ]).
 
+% [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCards, Builds, BuildOwners, LastCapturer, GameDeck, NextPlayer]
+
+
 /**
 Clause Name: getRoundNumFromState
 Purpose: Pulls the RoundNum from the State List
@@ -30,46 +33,6 @@ getRoundNumFromState(State, _) :- State = [].
 getRoundNumFromState(State, RoundNum) :- nth0(0, State, RoundNum).
 
 /**
-Clause Name: getDeckFromState
-Purpose: Pulls the GameDeck from the State List
-Parameters:
-    State, List containing all variables relevant to game play.
-    NewGameDeck, Variable to be instantiated to GameDeck from State.
-**/
-getDeckFromState(State, _) :- State = [].
-getDeckFromState(State, NewGameDeck) :- nth0(1, State, NewGameDeck).
-
-/**
-Clause Name: getHumanScoreFromState
-Purpose: Pulls the human score from the State List
-Parameters:
-    State, List containing all variables relevant to game play.
-    HumanScore, Variable to be instantiated to HumanScore from State.
-**/
-getHumanScoreFromState(State, _) :- State = [].                   
-getHumanScoreFromState(State, HumanScore) :- nth0(2, State, HumanScore).
-
-/**
-Clause Name: getHumanHandFromState
-Purpose: Pulls the HumanHand from the State List
-Parameters:
-    State, List containing all variables relevant to game play.
-    HumanHand, Variable to be instantiated to HumanHand from State.
-**/
-getHumanHandFromState(State, _) :- State = [].
-getHumanHandFromState(State, HumanHand) :- nth0(3, State, HumanHand).
-
-/**
-Clause Name: getHumanPileFromState
-Purpose: Pulls the HumanPile from the State List
-Parameters:
-    State, List containing all variables relevant to game play.
-    HumanPile, Variable to be instantiated to HumanPile from State.
-**/
-getHumanPileFromState(State, _) :- State = [].
-getHumanPileFromState(State, HumanPile) :- nth0(4, State, HumanPile).
-
-/**
 Clause Name: getComputerScoreFromState
 Purpose: Pulls the ComputerScore from the State List
 Parameters:
@@ -77,7 +40,7 @@ Parameters:
     ComputerScore, Variable to be instantiated to ComputerScore from State.
 **/
 getComputerScoreFromState(State, _) :- State = [].
-getComputerScoreFromState(State, ComputerScore) :- nth0(5, State, ComputerScore).
+getComputerScoreFromState(State, ComputerScore) :- nth0(1, State, ComputerScore).
 
 /**
 Clause Name: getComputerHandFromState
@@ -87,7 +50,7 @@ Parameters:
     ComputerHand, Variable to be instantiated to ComputerHand from State.
 **/
 getComputerHandFromState(State, _) :- State = [].
-getComputerHandFromState(State, ComputerHand) :- nth0(6, State, ComputerHand).
+getComputerHandFromState(State, ComputerHand) :- nth0(2, State, ComputerHand).
 
 /**
 Clause Name: getComputerPileFromState
@@ -97,7 +60,47 @@ Parameters:
     ComputerPile, Variable to be instantiated to ComputerPile from State.
 **/
 getComputerPileFromState(State, _) :- State = [].
-getComputerPileFromState(State, ComputerPile) :- nth0(7, State, ComputerPile).
+getComputerPileFromState(State, ComputerPile) :- nth0(3, State, ComputerPile).
+
+/**
+Clause Name: getHumanScoreFromState
+Purpose: Pulls the human score from the State List
+Parameters:
+    State, List containing all variables relevant to game play.
+    HumanScore, Variable to be instantiated to HumanScore from State.
+**/
+getHumanScoreFromState(State, _) :- State = [].                   
+getHumanScoreFromState(State, HumanScore) :- nth0(4, State, HumanScore).
+
+/**
+Clause Name: getHumanHandFromState
+Purpose: Pulls the HumanHand from the State List
+Parameters:
+    State, List containing all variables relevant to game play.
+    HumanHand, Variable to be instantiated to HumanHand from State.
+**/
+getHumanHandFromState(State, _) :- State = [].
+getHumanHandFromState(State, HumanHand) :- nth0(5, State, HumanHand).
+
+/**
+Clause Name: getHumanPileFromState
+Purpose: Pulls the HumanPile from the State List
+Parameters:
+    State, List containing all variables relevant to game play.
+    HumanPile, Variable to be instantiated to HumanPile from State.
+**/
+getHumanPileFromState(State, _) :- State = [].
+getHumanPileFromState(State, HumanPile) :- nth0(6, State, HumanPile).
+
+/**
+Clause Name: getTableCardsFromState
+Purpose: Pulls the TableCards from the State List
+Parameters:
+    State, List containing all variables relevant to game play.
+    TableCards, Variable to be instantiated to TableCards from State.
+**/
+getTableCardsFromState(State, _) :- State = [].
+getTableCardsFromState(State, TableCards) :- nth0(7, State, TableCards).
 
 /**
 Clause Name: getBuildsFromState
@@ -120,14 +123,25 @@ getBuildOwnersFromState(State, _) :- State = [].
 getBuildOwnersFromState(State, BuildOwners) :- nth0(9, State, BuildOwners).
 
 /**
-Clause Name: getTableCardsFromState
-Purpose: Pulls the TableCards from the State List
+Clause Name: getLastCapturerFromState
+Purpose: Pulls the LastCapturer var from the State List
+Parameters:
+        State, List containing all variables relevant to game play.
+        LastCapturer, Variable to be instantiated to LastCapturer from state.
+**/
+getLastCapturerFromState(State, _) :- State = [].
+getLastCapturerFromState(State, LastCapturer) :- nth0(10, State, LastCapturer).
+
+/**
+Clause Name: getDeckFromState
+Purpose: Pulls the GameDeck from the State List
 Parameters:
     State, List containing all variables relevant to game play.
-    TableCards, Variable to be instantiated to TableCards from State.
+    NewGameDeck, Variable to be instantiated to GameDeck from State.
 **/
-getTableCardsFromState(State, _) :- State = [].
-getTableCardsFromState(State, TableCards) :- nth0(10, State, TableCards).
+getDeckFromState(State, _) :- State = [].
+getDeckFromState(State, NewGameDeck) :- nth0(11, State, NewGameDeck).
+
 
 /**
 Clause Name: getPlayNextFromState
@@ -137,7 +151,7 @@ Parameters:
     NewNextPlayer, Variable to be instantiated to NextPlayer from State.
 **/
 getPlayNextFromState(State, _) :- State = [].
-getPlayNextFromState(State, NewNextPlayer) :- nth0(11, State, NewNextPlayer).
+getPlayNextFromState(State, NewNextPlayer) :- nth0(12, State, NewNextPlayer).
 
 
 /**
@@ -241,7 +255,14 @@ loadOrNew(_) :-
 Clause Name: loadGame
 Purpose: Load a saved game state
 **/
-loadGame() :- write("Placeholder.").
+loadGame() :- 
+        getSaveFileName(SaveFileName),
+        catch(open(SaveFileName, read, TESTFILE), E, (write("Could not find file. Try again."), nl, loadGame())),
+        close(TESTFILE),
+        open(SaveFileName, read, SAVEFILE),
+        read(SAVEFILE, SavedState),
+        close(SAVEFILE),
+        playRound(SavedState).
 
 /**
 Clause Name: startNewTournament
@@ -271,8 +292,9 @@ setupRound() :-
         ComputerPile = [],
         Builds = [],
         BuildOwners = [],
-        State = [RoundNum, TNewGameDeck, HumanScore, HumanHandBeforeMove, HumanPile, ComputerScore, ComputerHandBeforeMove, ComputerPile, Builds, BuildOwners, TableCardsBeforeMove, NextPlayer],
-        printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),                    
+        LastCapturer = none,
+        State = [RoundNum, ComputerScore, ComputerHandBeforeMove, ComputerPile, HumanScore, HumanHandBeforeMove, HumanPile, TableCardsBeforeMove, Builds, BuildOwners, LastCapturer, TNewGameDeck, NextPlayer],
+        printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),               
         playRound(State).
 
 /**
@@ -340,7 +362,8 @@ playRound(State) :-
         getDeckFromState(State, NewGameDeck),
         getPlayNextFromState(State, NextPlayer),
         checkHandsEmpty(HumanHandBeforeMove, HumanHandAfterCheck, ComputerHandBeforeMove, ComputerHandAfterCheck, NewGameDeck, GameDeck),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterCheck, HumanPileBeforeMove, ComputerScore, ComputerHandAfterCheck, ComputerPileBeforeMove, BuildsBeforeMove, BuildOwners, TableCardsBeforeMove, NextPlayer],
+        % [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCards, Builds, BuildOwners, LastCapturer, GameDeck, NextPlayer]
+        NewState = [RoundNum, ComputerScore, ComputerHandAfterCheck, ComputerPileBeforeMove, HumanScore, HumanHandAfterCheck, HumanPileBeforeMove, TableCardsBeforeMove, BuildsBeforeMove, BuildOwners, LastCapturer, GameDeck, NextPlayer],
         printBoard(NewState, HumanPileBeforeMove, HumanHandAfterCheck, TableCardsBeforeMove, ComputerPileBeforeMove, ComputerHandAfterCheck),
         getMove(NewState, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandAfterCheck, ComputerHandAfterCheck, HumanHand, ComputerHand, TableCards, HumanPileAfterMove, ComputerPileAfterMove).
 
@@ -595,10 +618,26 @@ makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBe
         selectCard(HumanHandBeforeMove, CardPlayed, Input2),
         increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
 
+makeMove(State, _, _, MoveInput, _, _, _, _, _, _, _) :-
+        MoveInput = save,
+        getSaveFileName(SaveFileName),
+        open(SaveFileName, write, SAVEFILE),
+        write(SAVEFILE, State),
+        write(SAVEFILE, "."),
+        close(SAVEFILE),
+        write("Game saved. Exiting now."), nl,
+        halt().
+
 makeMove(_, _, _, MoveInput, _, _, _, _, _, _, _) :-
         MoveInput = exit,
         write("Thanks for playing! Exiting game."), nl,
         halt().
+
+getSaveFileName(SaveFileName) :-
+        write("What is the name of your save file? "),
+        read(FileNameInput),
+        string_concat(FileNameInput, ".txt", SaveFileName).
+        
 
 /**
 Clause Name: whosPlayingNext
@@ -863,9 +902,10 @@ trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HandBeforeMove, Ha
         getComputerScoreFromState(State, ComputerScore),
         getComputerPileFromState(State, ComputerPile),
         whosPlayingNext(CurrentPlayer, NextPlayer),
+        getLastCapturerFromState(State, LastCapturer),
         getPlayerHands(State, CurrentPlayer, HandAfterMove, HumanHand, ComputerHand),
         getBuildsFromState(State, Builds),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHand, HumanPile, ComputerScore, ComputerHand, ComputerPile, Builds, BuildOwners, TableCardsAfterMove, NextPlayer],
+        NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCardsAfterMove, Builds, BuildOwners, LastCapturer, GameDeck, NextPlayer],
         playRound(NewState).
 
 /**
@@ -980,8 +1020,9 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         getComputerScoreFromState(State, ComputerScore),
         getComputerHandFromState(State, ComputerHand),
         getComputerPileFromState(State, ComputerPile),
+        getLastCapturerFromState(State, LastCapturer),
         whosPlayingNext(CurrentPlayer, NextPlayer),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, BuildOwners, TableCardsAfterMove, NextPlayer],
+        NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHandAfterMove, HumanPile, TableCardsAfterMove, BuildsAfterMove, BuildOwners, LastCapturer, GameDeck, NextPlayer],
         playRound(NewState).
         
 build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
@@ -1005,8 +1046,9 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         getComputerScoreFromState(State, ComputerScore),
         getComputerHandFromState(State, ComputerHand),
         getComputerPileFromState(State, ComputerPile),
+        getLastCapturerFromState(State, LastCapturer),
         whosPlayingNext(CurrentPlayer, NextPlayer),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, NewBuildOwners, TableCardsAfterMove, NextPlayer],
+        NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHandAfterMove, HumanPile, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, LastCapturer, GameDeck, NextPlayer],
         playRound(NewState).
 
 extendingBuild(CardSelected, CurrentPlayer, BuildsList, BuildOwners, BuildFound) :-
@@ -1175,7 +1217,8 @@ increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterM
         getComputerPileFromState(State, ComputerPile),
         getComputerScoreFromState(State, ComputerScore),
         whosPlayingNext(CurrentPlayer, NextPlayer),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPile, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, NewBuildOwners, TableCardsBeforeMove, NextPlayer],
+        getLastCapturerFromState(State, LastCapturer),
+        NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHandAfterMove, HumanPile, TableCardsBeforeMove, BuildsAfterMove, NewBuildOwners, LastCapturer, GameDeck, NextPlayer],
         playRound(NewState).
 
 /**
@@ -1349,7 +1392,7 @@ capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeM
         getComputerPileFromState(State, ComputerPile),
         getPlayNextFromState(State, CurrentPlayer),
         whosPlayingNext(CurrentPlayer, NextPlayer),
-        NewState = [RoundNum, GameDeck, HumanScore, HumanHandAfterMove, HumanPileAfterMove, ComputerScore, ComputerHand, ComputerPile, BuildsAfterMove, NewBuildOwners, TableCardsAfterMove, NextPlayer],
+        NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHandAfterMove, HumanPileAfterMove, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, CurrentPlayer, GameDeck, NextPlayer],
         playRound(NewState).
 
 /**
