@@ -398,8 +398,42 @@ printBuilds([]).
 
 printBuilds(Builds) :-
         [B1 | Rest] = Builds,
-        write(B1), write(" "),
+        printOpenBracketIfMB(B1),
+        printBuild(B1),
+        printClosedBracketIfMB(B1),
         printBuilds(Rest).
+
+/**
+Clause Name: printOpenBracketIfMB
+Purpose: Prints an extra open bracket if build being printed is a multi-build.
+Parameters: Build, Build being printed.
+**/
+printOpenBracketIfMB(Build) :-
+        length(Build, 1).
+printOpenBracketIfMB(_) :-
+        write("[ ").
+
+/**
+Clause Name: printClosedBracketIfMB
+Purpose: Prints an extra closed bracket if build being printed is a multi-build.
+Parameters: Build, Build being printed.
+**/
+printClosedBracketIfMB(Build) :-
+        length(Build, 1).
+printClosedBracketIfMB(_) :-
+        write("] ").
+
+/**
+Clause Name: printBuild
+Purpose: Prints the contents of a build set.
+Parameters: Build, Build being printed.
+**/
+printBuild([]).
+
+printBuild(Build) :-
+        [Set | Rest] = Build,
+        write("[ "), printCards(Set), write("] "),
+        printBuild(Rest). 
 
 /**
 Clause Name: printBuildOwners
@@ -413,7 +447,10 @@ printBuildOwners([], []).
 printBuildOwners(Builds, BuildOwners) :-
         [B1 | RestOfBuilds] = Builds,
         [Owner1 | RestOfOwners] = BuildOwners,
-        write(B1), write(" "), write(Owner1), write(" "),
+        printOpenBracketIfMB(B1),
+        printBuild(B1),
+        printClosedBracketIfMB(B1),
+        write(Owner1), write(" "),
         printBuildOwners(RestOfBuilds, RestOfOwners).
 
 /**
@@ -696,6 +733,10 @@ getSetValue(CardList, Value, FinalVal) :-
         NewVal is Value + CardVal,
         getSetValue(Rest, NewVal, FinalVal).
 
+getBuildValue(Build, FinalVal) :-
+        [Set | _] = Build,
+        getSetValue(Set, 0, FinalVal).
+
 /**
 Clause Name: indexOf
 Purpose: Finds index of a given element in a list, Index of -1 provided if element not found.
@@ -879,7 +920,7 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         append(FinalCardsSelected, [CardPlayed], BuildCardList),
         getSetValue(BuildCardList, 0, BuildVal),
         validateBuildCreated(State, BuildVal, SelectedValue),
-        write("Creating build of: [ "), printBuilds([BuildFound, BuildCardList]), write("]"), nl,
+        write("Creating build of: [ "), printBuilds([BuildFound, [BuildCardList]]), write("]"), nl,
         % update model
         updateBuildList(BuildFound, BuildCardList, BuildsBeforeMove, BuildsIn, BuildsAfterMove),
         removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
@@ -905,7 +946,7 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         write("Creating build of: [ "), printCards(BuildCardList), write("]"), nl,
         removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
         removeCardsFromList(BuildCardList, TableCardsBeforeMove, TableCardsAfterMove),
-        append(BuildsBeforeMove, [BuildCardList], BuildsAfterMove),
+        append(BuildsBeforeMove, [[BuildCardList]], BuildsAfterMove),
         getBuildOwnersFromState(State, BuildOwners),
         getPlayNextFromState(State, CurrentPlayer),
         append(BuildOwners, [CurrentPlayer], NewBuildOwners),
@@ -973,14 +1014,14 @@ Parameters:
         CurrentBuild, Build in question.
         PossibleBuild, Uninstantiated var to return possible builds.
 **/
-findBuildWithSameVal(_, _, CheckedBuild, PossibleBuild) :-
-        CheckedBuild \= [],
-        PossibleBuild = CheckedBuild.
+findBuildWithSameVal(_, _, CurrentBuild, PossibleBuild) :-
+        CurrentBuild \= [],
+        PossibleBuild = CurrentBuild.
 
 findBuildWithSameVal(CardSelected, BuildsList, CurrentBuild, PossibleBuild) :-
         getValue(CardSelected, SelectedValue),
         [Build | Rest] = BuildsList,
-        getSetValue(Build, 0, BuildValue),
+        getBuildValue(Build, BuildValue),
         checkBuildValue(SelectedValue, BuildValue, Build, CheckedBuild),
         findBuildWithSameVal(CardSelected, Rest, CheckedBuild, PossibleBuild).
 
@@ -1046,7 +1087,7 @@ Parameters:
 **/
 checkBuildEquality(Build, BuildToExtend, NewBuild, BuildOut) :-
         Build = BuildToExtend,
-        append([Build], [NewBuild], BuildOut).
+        append(Build, [NewBuild], BuildOut).
 
 checkBuildEquality(Build, _, NewBuild, BuildOut) :- BuildOut = [Build].
 
