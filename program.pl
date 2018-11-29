@@ -1288,7 +1288,8 @@ capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeM
         write("Player will also capture via sets: "), printSets(CapturableSets), nl,
         removeSetsFromList(CapturableSets, TableCardsAfterSameVal, TableCardsAfterMove),
         append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
-        addCapturedSetsToPile(CapturableBuilds2, HumanPileWithCaptureCard, HumanPileWithBuilds),
+        flattenList(CapturableBuilds2, _, BuildCardsCaptured),
+        addCapturedSetsToPile(BuildCardsCaptured, HumanPileWithCaptureCard, HumanPileWithBuilds),
         append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterSameVal),
         addCapturedSetsToPile(CapturableSets, HumanPileAfterSameVal, HumanPileAfterMove),
         removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove),
@@ -1336,11 +1337,14 @@ promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
         write("Do you want to capture the following builds? (y/n): "),
         printBuilds(CapturableBuilds),
         read(Input),
-        Input = n,
-        CapturableBuildsAfterPrompt = [].
+        validateBuildInput(Input, CapturableBuilds, CapturableBuildsAfterPrompt).
 
-promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
-        CapturableBuildsAfterPrompt = CapturableBuilds.
+validateBuildInput(Input, _, BuildsOut) :-
+        Input = n,
+        BuildsOut = [].
+
+validateBuildInput(_, BuildsIn, BuildsOut) :-
+        BuildsOut = BuildsIn.
 
 /**
 Clause Name: promptSetCapture
@@ -1412,7 +1416,7 @@ getCapturableBuilds(_, [], CapturableBuilds1, CapturableBuilds2) :-
 getCapturableBuilds(CardPlayed, BuildsList, CapturableBuilds1, CapturableBuilds2) :-
         getValue(CardPlayed, PlayedVal),
         [B1 | Rest] = BuildsList,
-        getSetValue(B1, 0, BuildVal),
+        getBuildValue(B1, BuildVal),
         PlayedVal = BuildVal,
         append(CapturableBuilds1, [B1], NewBuilds),
         getCapturableBuilds(CardPlayed, Rest, NewBuilds, CapturableBuilds2).
