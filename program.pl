@@ -820,6 +820,13 @@ getSetValue(CardList, Value, FinalVal) :-
         NewVal is Value + CardVal,
         getSetValue(Rest, NewVal, FinalVal).
 
+/**
+Clause Name: getBuildValue
+Purpose: Get the sum value of a build.
+Parameters:
+        Build, Build to get value of.
+        FinalVal, Uninstantiated var to pass computed value back through the clause. 
+**/
 getBuildValue(Build, FinalVal) :-
         [Set | _] = Build,
         getSetValue(Set, 0, FinalVal).
@@ -1369,7 +1376,7 @@ capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeM
         /** Build capture **/
         getBuildOwnersFromState(State, BuildOwners),
         getCapturableBuilds(Card, BuildsBeforeMove, CapturableBuilds1, CapturableBuilds2),
-        promptBuildCapture(CapturableBuilds2, CapturedBuilds),
+        promptBuildCapture(State, HumanHandBeforeMove, CapturableBuilds2, CapturedBuilds),
         write("Player will also capture: "), printBuilds(CapturedBuilds), nl,
         % Issue here when more than one build is being captured at once.
         removeBuildOwners(CapturedBuilds, BuildsBeforeMove, BuildOwners, NewBuildOwners),
@@ -1377,7 +1384,8 @@ capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeM
         /** Set capture **/
         promptSetCapture(State, Card, TableCardsAfterSameVal, CapturableCardsAfter, CapturedBuilds, CapturableSets),
         write("Player will also capture via sets: "), printSets(CapturableSets), nl,
-        removeSetsFromList(CapturableSets, TableCardsAfterSameVal, TableCardsAfterMove),
+        flattenList(CapturableSets, _, CapturableSetsAsList),
+        removeSetsFromList(CapturableSetsAsList, TableCardsAfterSameVal, TableCardsAfterMove),
         append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
         flattenList(CapturableBuilds2, _, BuildCardsCaptured),
         addCapturedSetsToPile(BuildCardsCaptured, HumanPileWithCaptureCard, HumanPileWithBuilds),
@@ -1420,22 +1428,99 @@ Parameters:
         CapturableBuilds, list of builds that can be captured.
         CapturableBuildsAfterPrompt, uninstantiated var that will contain the list of builds captured after prompt.
 **/
-promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
+promptBuildCapture(_, _, CapturableBuilds, CapturableBuildsAfterPrompt) :-
         CapturableBuilds = [],
         CapturableBuildsAfterPrompt = CapturableBuilds.
 
-promptBuildCapture(CapturableBuilds, CapturableBuildsAfterPrompt) :-
+promptBuildCapture(State, PlayerHand, CapturableBuilds, CapturableBuildsAfterPrompt) :-
         write("Do you want to capture the following builds? (y/n): "),
         printBuilds(CapturableBuilds),
         read(Input),
-        validateBuildInput(Input, CapturableBuilds, CapturableBuildsAfterPrompt).
+        validateBuildInput(State, PlayerHand, Input, CapturableBuilds, CapturableBuildsAfterPrompt).
 
-validateBuildInput(Input, _, BuildsOut) :-
+/**
+Clause Name: validateBuildInput
+Purpose: Checks to make sure the user input for build capture is correct. Also, if user selects not to capture a build with their last capture card, it will fail.
+Parameters:
+        State, List of variables used in game state.
+        PlayerHand, List of cards in player's hand.
+        BuildsIn, Capturable builds.
+        BuildsOut, Used to return capturable builds if user selects to capture, [] otherwise.
+**/
+validateBuildInput(State, PlayerHand, Input, BuildsIn, BuildsOut) :-
         Input = n,
+        checkCaptureCards(State, PlayerHand, BuildsIn),
         BuildsOut = [].
 
-validateBuildInput(_, BuildsIn, BuildsOut) :-
+validateBuildInput(_, _, Input, BuildsIn, BuildsOut) :-
+        Input = y,
         BuildsOut = BuildsIn.
+
+validateBuildInput(State, _, _, _, _) :-
+        write("Invalid input. Try again."), nl,
+        playRound(State).
+
+/**
+Clause Name: checkCaptureCards
+Purpose: Checks to see if there is more than one capture card in player's hand.
+Parameters:
+        State, List of variables involved in game state.
+        PlayerHand, List of cards in player's hand.
+        Builds, List of capturable builds.
+**/
+checkCaptureCards(State, PlayerHand, Builds) :-
+        [Build | _] = Builds,
+        getBuildValue(Build, BuildVal),
+        getCaptureCardsInHand(PlayerHand, BuildVal, _, CaptureCards),
+        assessNumberOfCaptureCards(State, CaptureCards).
+
+/**
+Clause Name: getCaptureCardsInHand
+Purpose: Generates a list of viable capture cards in hand.
+Paramaters:
+        PlayerHand, List of cards in player's hand.
+        BuildVal, Sum value of the build(s) to be captured.
+        CardsIn, Uninstantiated variable to keep track of capture cards within clause.
+        CardsOut, Uninstantiated variable to pass list of capture cards out of clause.
+**/
+getCaptureCardsInHand([], _, CardsIn, CardsOut) :- CardsOut = CardsIn.
+
+getCaptureCardsInHand(PlayerHand, BuildVal, CardsIn, CardsOut) :-
+        [Card | Rest] = PlayerHand,
+        getValue(Card, CaptureValue),
+        assessCaptureValue(Card, CaptureValue, BuildVal, CardsIn, CardsAfterAssessment),
+        getCaptureCardsInHand(Rest, BuildVal, CardsAfterAssessment, CardsOut).
+
+/**
+Clause Name: assessCaptureValue
+Purpose: Assesses the value of card in question to see if it can be used as a capture card. If it can, it is added to the current list.
+Parameters:
+        Card, Card in question.
+        CaptureValue, Value of card.
+        BuildVal, Value of build(s) to be captured.
+        CardsIn, List of viable capture cards passed in.
+        CardsOut, Uninstantiated variable to send updated list out of clause.
+**/
+assessCaptureValue(Card, CaptureValue, BuildVal, CardsIn, CardsOut) :-
+        CaptureValue = BuildVal,
+        append(CardsIn, [Card], CardsOut).
+
+assessCaptureValue(_, _, _, CardsIn, CardsOut) :- CardsOut = CardsIn.
+
+/**
+Clause Name: assessNumerOfCaptureCards
+Purpose: If only one possible capture card exists, print error message and restart turn.
+Parameters:
+        State, List of variables involved in current game state.
+        CaptureCards, List of possible capture cards found.
+**/
+assessNumberOfCaptureCards(State, CaptureCards) :-
+        length(CaptureCards, 1),
+        write("Must capture build, this is the only capture card. Try again."), nl,
+        playRound(State).
+assessNumberOfCaptureCards(_, _).
+
+
 
 /**
 Clause Name: promptSetCapture
