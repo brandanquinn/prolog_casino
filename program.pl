@@ -285,7 +285,7 @@ setupRound() :-
         dealCards(GameDeckBeforeMove, HNewGameDeck, HumanHandBeforeMove),
         dealCards(HNewGameDeck, CNewGameDeck, ComputerHandBeforeMove),
         dealCards(CNewGameDeck, TNewGameDeck, TableCardsBeforeMove),
-        RoundNum = 0,
+        RoundNum = 1,
         HumanScore = 0,
         ComputerScore = 0,
         HumanPile = [],
@@ -361,6 +361,7 @@ playRound(State) :-
         getComputerHandFromState(State, ComputerHandBeforeMove),
         getDeckFromState(State, NewGameDeck),
         getPlayNextFromState(State, NextPlayer),
+        getLastCapturerFromState(State, LastCapturer),
         checkHandsEmpty(HumanHandBeforeMove, HumanHandAfterCheck, ComputerHandBeforeMove, ComputerHandAfterCheck, NewGameDeck, GameDeck),
         % [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCards, Builds, BuildOwners, LastCapturer, GameDeck, NextPlayer]
         NewState = [RoundNum, ComputerScore, ComputerHandAfterCheck, ComputerPileBeforeMove, HumanScore, HumanHandAfterCheck, HumanPileBeforeMove, TableCardsBeforeMove, BuildsBeforeMove, BuildOwners, LastCapturer, GameDeck, NextPlayer],
@@ -421,6 +422,9 @@ printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) 
         printWhoseTurn(NewNextPlayer),
         getHumanScoreFromState(State, HumanScore),
         getComputerScoreFromState(State, ComputerScore),
+        getRoundNumFromState(State, RoundNum),
+        write("Round Number: "),
+        write(RoundNum), nl,
         write("Human Score: "),
         write(HumanScore), nl,
         write("Human Pile: "),
@@ -1519,8 +1523,6 @@ assessNumberOfCaptureCards(State, CaptureCards) :-
         write("Must capture build, this is the only capture card. Try again."), nl,
         playRound(State).
 assessNumberOfCaptureCards(_, _).
-
-
 
 /**
 Clause Name: promptSetCapture
