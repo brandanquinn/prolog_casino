@@ -391,6 +391,22 @@ checkHandsEmpty(HumanHand, NewHumanHand, ComputerHand, NewComputerHand, GameDeck
         NewComputerHand = ComputerHand.
 
 /**
+Clause Name: getCurrentPlayersHand
+Purpose: Get hand of current player making move.
+Parameters:
+        State, List of variables in current game state.
+        CurrentPlayer, Player currently making move.
+        PlayerHand, Uninstantiated variable to send players hand to.
+**/
+getCurrentPlayersHand(State, CurrentPlayer, PlayerHand) :-
+        CurrentPlayer = human,
+        getHumanHandFromState(State, PlayerHand).
+
+getCurrentPlayersHand(State, CurrentPlayer, PlayerHand) :-
+        CurrentPlayer = computer,
+        getComputerHandFromState(State, PlayerHand).
+
+/**
 Clause Name: dealCards
 Purpose: Deals 4 cards.
 Parameters:
@@ -553,10 +569,10 @@ Parameters:
     HumanHand
 **/
 getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :-
-        getPlayNextFromState(State, NewNextPlayer),
-        NewNextPlayer = human,
+        getPlayNextFromState(State, CurrentPlayer),
+        CurrentPlayer = human,
         write("What move would you like to make?"), nl,
-        write("(capture, build, increase, trail, save, deck, or exit): "),
+        write("(capture, build, increase, trail, help, save, deck, or exit): "),
         read(MoveInput),
         getHumanPileFromState(State, HumanPileBeforeMove),
         getComputerPileFromState(State, ComputerPileAfterMove),
@@ -564,11 +580,75 @@ getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMo
 
 % Computer move
 getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :- 
-        getPlayNextFromState(State, NewNextPlayer),
-        NewNextPlayer = computer,
-        write("Computer making move."), nl,
-        selectCard(ComputerHandBeforeMove, Card, 0),
-        trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, ComputerHandBeforeMove, ComputerHandAfterMove).
+        getPlayNextFromState(State, CurrentPlayer),
+        CurrentPlayer = computer,
+        getHelp(State, BuildsBeforeMove, TableCardsBeforeMove, ComputerHandBeforeMove).
+
+getHelp(State, Builds, TableCards, PlayerHand) :-
+        % Check for increase
+        tryIncrease(State, Builds, PlayerHand, PlayerHand).
+
+/**
+Clause Name: tryIncrease
+Purpose: AI tries to increase and claim an opponent's build.
+Parameters:
+        State, List of all variables used in game state.
+        Builds, List of current builds on the table.
+        StaticHand, List of cards in player's hand. Is not changed.
+        DynamicHand, List of cards in player's hand to iterate through and select certain cards.
+**/
+tryIncrease(_, [], _, _).
+
+tryIncrease(State, _, _, []) :-
+        getTableCardsFromState(State, TableCards),
+        getComputerHandFromState(State, ComputerHand),
+        [CardSelected | _] = ComputerHand,
+        write("No increase move found. Trailing: "), printCards([CardSelected]), nl,
+        trail(State, CardSelected, TableCards, _, ComputerHand, _).
+
+tryIncrease(State, Builds, StaticHand, DynamicHand) :-
+        % Try to increase a build for each combination of cards in your hand.
+        [CardSelected | Rest] = DynamicHand,
+        checkCardsPlayed(State, CardSelected, StaticHand, increase),
+        tryIncrease(State, Builds, StaticHand, Rest).
+
+/**
+Clause Name: checkCardsPlayed
+Purpose: Iterates through hand and tries to play each card
+Parameters:
+        State, List of all variables used in game state.
+        CardSelected, Card selected to try to sum build to.
+        Hand, Player's hand to iterate and test cards to play.
+        MoveType, Move type selected to test by AI.
+**/
+checkCardsPlayed(State, CardSelected, [], _) :-
+        getPlayNextFromState(State, CurrentPlayer),
+        getCurrentPlayersHand(State, CurrentPlayer, PlayerHand),
+        getSubHand(CardSelected, PlayerHand, UpdatedHand),
+        getBuildsFromState(State, Builds),
+        tryIncrease(State, Builds, PlayerHand, UpdatedHand).
+        
+checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
+        MoveType = increase,
+        [CardPlayed | Rest] = Hand,
+        aiIncrease(State, CardSelected, CardPlayed, Rest).
+
+/**
+Clause Name: getSubHand
+Purpose: Finds a sublist of given hand after card is found.
+Parameters:
+        Card, Card being looked for to slice list at.
+        Hand, List of cards being looked through.
+        UpdatedHand, Slice of cards in hand after card is found.
+**/
+getSubHand(Card, Hand, UpdatedHand) :-
+        [Card | Rest] = Hand,
+        UpdatedHand = Rest.
+
+getSubHand(Card, Hand, UpdatedHand) :-
+        [_ | Rest] = Hand,
+        getSubHand(Card, Rest, UpdatedHand).
+        
 
 /**
 Clause Name: makeMove
@@ -620,7 +700,12 @@ makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBe
         read(Input2),
         selectCard(HumanHandBeforeMove, CardSelected, Input1),
         selectCard(HumanHandBeforeMove, CardPlayed, Input2),
-        increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
+        increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, HumanHandBeforeMove, BuildsBeforeMove).
+
+makeMove(State, BuildsBeforeMove, _, MoveInput, _, TableCardsBeforeMove, _, HumanHandBeforeMove, _, _, _) :-
+        MoveInput = help,
+        getHelp(State, BuildsBeforeMove, TableCardsBeforeMove, HumanHandBeforeMove).
+
 
 makeMove(State, _, _, MoveInput, _, _, _, _, _, _, _) :-
         MoveInput = save,
@@ -637,6 +722,12 @@ makeMove(_, _, _, MoveInput, _, _, _, _, _, _, _) :-
         write("Thanks for playing! Exiting game."), nl,
         halt().
 
+/**
+Clause Name: getSaveFileName
+Purpose: Gets the name of a save file and adds .txt by default.
+Parameters:
+        SaveFileName, Uninstantiated variable to pass user input through.
+**/
 getSaveFileName(SaveFileName) :-
         write("What is the name of your save file? "),
         read(FileNameInput),
@@ -1062,6 +1153,16 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHandAfterMove, HumanPile, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, LastCapturer, GameDeck, NextPlayer],
         playRound(NewState).
 
+/**
+Clause Name: extendingBuild
+Purpose: Checks to see if you have a build to extend to a multi-build.
+Parameters:
+        CardSelected, Card that build is summing to.
+        CurrentPlayer, Player currently making move.
+        BuildsList, List of current builds on the table.
+        BuildOwners, List of build owners.
+        BuildFound, Uninstantiated variable to pass build found through.
+**/
 extendingBuild(CardSelected, CurrentPlayer, BuildsList, BuildOwners, BuildFound) :-
         % iterate through builds list
         % get list of builds that belong to current player
@@ -1202,7 +1303,7 @@ Parameters:
         TableCardsBeforeMove, List of cards on the game table.
         BuildsBeforeMove, List of builds on the game table.
 **/
-increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, HumanHandBeforeMove, BuildsBeforeMove) :-
         getValue(CardSelected, SelectedValue),
         getValue(CardPlayed, PlayedVal),
         getBuildSelection(State, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease),
@@ -1233,6 +1334,106 @@ increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterM
         playRound(NewState).
 
 /**
+Clause Name: aiIncrease
+Purpose: Check to see if AI can increase and claim a build.
+Parameters:
+        State, list of variables used in game state.
+        CardSelected, Card selected to sum increased build to.
+        CardPlayed, Card to play into build.
+        RestOfTestHand, Rest of cards in hand that AI has yet to test.
+**/
+aiIncrease(State, CardSelected, CardPlayed, RestOfTestHand) :-
+        getBuildsFromState(State, Builds),
+        getPlayNextFromState(State, CurrentPlayer),
+        getValue(CardSelected, SelectedValue),
+        getValue(CardPlayed, PlayedVal),
+        aiCheckValuesForIncrease(State, CardSelected, SelectedValue, PlayedVal, RestOfTestHand),
+        aiGetBuildSelection(State, CardSelected, RestOfTestHand, CurrentPlayer, SelectedValue, PlayedVal, Builds, BuildToIncrease),
+        write("Found build to increase: "), printBuild(BuildToIncrease), nl,
+        getBuildOwnersFromState(State, BuildOwners),
+        aiValidateBuild(State, CardSelected, RestOfTestHand, BuildToIncrease, Builds, BuildOwners, CurrentPlayer),
+        write("Build belongs to other player!"), nl,
+        indexOf(Builds, BuildToIncrease, IndexOfBuild),
+        humanCheck(State, CurrentPlayer, BuildToIncrease),
+        increaseBuild(CardPlayed, BuildToIncrease, IndexOfBuild, CurrentPlayer, BuildOwners, IncreasedBuild, NewBuildOwners),
+        write("New build of: "), printBuild(IncreasedBuild),
+        write("has been created and is now owned by: "), write(CurrentPlayer), nl,
+        replaceElement(IndexOfBuild, Builds, IncreasedBuild, BuildsAfterMove),
+        getCurrentPlayersHand(State, CurrentPlayer, PlayerHand),
+        removeCardFromList(CardPlayed, PlayerHand, PlayerHandAfterMove),
+        getRoundNumFromState(State, RoundNum),
+        getDeckFromState(State, GameDeck),
+        getHumanScoreFromState(State, HumanScore),
+        getHumanPileFromState(State, HumanPile),
+        getComputerPileFromState(State, ComputerPile),
+        getComputerScoreFromState(State, ComputerScore),
+        getTableCardsFromState(State, TableCards),
+        getPlayerHands(State, CurrentPlayer, PlayerHandAfterMove, HumanHand, ComputerHand),
+        whosPlayingNext(CurrentPlayer, NextPlayer),
+        getLastCapturerFromState(State, LastCapturer),
+        NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCards, BuildsAfterMove, NewBuildOwners, LastCapturer, GameDeck, NextPlayer],
+        playRound(NewState).
+
+/**
+Clause Name: humanCheck
+Purpose: If player getting help is human, ask them if they want to make the recommended move.
+Parameters:    
+        State, List of current variables in game state.
+        CurrentPlayer, Player currently making move.
+        BuildToIncrease, Build selected to increase by AI.
+**/
+humanCheck(_, CurrentPlayer, _) :- CurrentPlayer = computer.
+
+humanCheck(State, CurrentPlayer, BuildToIncrease) :-
+        CurrentPlayer = human,
+        write("Are you sure you want to increase this build(y/n): "), printBuild(BuildToIncrease),
+        read(Input),
+        assessIncreaseConfirmation(State, Input).
+
+/**
+Clause Name: assessIncreaseConfirmation
+Purpose: Checks the input provided by user for confirming recommended increase move.
+Parameters:
+        State, List of variables in current game state.
+        Input, Input provded by user.
+**/
+assessIncreaseConfirmation(_, Input) :-
+        Input = y.
+
+assessIncreaseConfirmation(State, Input) :-
+        Input = n,
+        write("You have selected not to make AI recommended move. Restarting turn."), nl,
+        playRound(State).
+
+assessIncreaseConfirmation(State, _) :-
+        write("Invalid input. Try again"),
+        playRound(State).
+
+
+
+/**
+Clause Name: aiCheckValuesForIncrease
+Purpose: Check values of cards and builds to see if increase move is valid.
+Parameters:
+        State, List of variables used in current game state.
+        CardSelected, Card selected to sum build to.
+        SelectedValue, Value of card selected.
+        PlayedVal, Value of card played.
+        RestOfTestHand, Rest of player's hand being assessed by AI.
+**/
+aiCheckValuesForIncrease(_, _, SelectedValue, PlayedVal, _) :-
+        SelectedValue > PlayedVal.
+
+aiCheckValuesForIncrease(State, CardSelected, SelectedValue, PlayedVal, RestOfTestHand) :-
+        SelectedValue = PlayedVal,
+        checkCardsPlayed(State, CardSelected, RestOfTestHand, increase).
+
+aiCheckValuesForIncrease(State, CardSelected, SelectedValue, PlayedVal, RestOfTestHand) :-
+        SelectedValue < PlayedVal,
+        checkCardsPlayed(State, CardSelected, RestOfTestHand, increase).
+
+
+/**
 Clause Name: getBuildSelection
 Purpose: Get Build to increase selected by user.
 Parameters:
@@ -1242,11 +1443,42 @@ Parameters:
         BuildsBeforeMove, List of builds on the table.
         BuildToIncrease, Uninstantiated var that will contain the Build selected to increase.
 **/
-getBuildSelection(State, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease) :-
+getBuildSelection(State, CurrentPlayer, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease) :-
+        CurrentPlayer = human,
         getBuildForUser(State, BuildsBeforeMove, BuildSelected),
-        getSetValue(BuildSelected, 0, BuildVal),
+        getBuildValue(BuildSelected, BuildVal),
         assessBuildValue(State, SelectedValue, PlayedVal, BuildVal),
         BuildToIncrease = BuildSelected.
+
+aiGetBuildSelection(State, CardSelected, RestOfTestHand, CurrentPlayer, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease) :-      
+        checkAllBuilds(State, CardSelected, RestOfTestHand, BuildsBeforeMove, SelectedValue, PlayedVal, [], BuildToIncrease).
+
+/**
+Clause Name: checkAllBuilds
+Purpose: Checks all current builds to find one to increase.
+Parameters:
+        State, List of variables used in current game state.
+        CardSelected, Card selected to sum build to.
+        RestOfTestHand, Rest of player's hand being assessed by AI.
+        Builds, List of current builds on game table.
+        SelectedValue, Value of card selected.
+        PlayedVal, Value of card played.
+        BuildIn, Used to pass builds around clause.
+        BuildToIncrease, Used to send build found out of clause.
+**/
+checkAllBuilds(State, CardSelected, RestOfTestHand, [], _, _, [], _) :- checkCardsPlayed(State, CardSelected, RestOfTestHand, increase).
+
+checkAllBuilds(_, _, _, [], _, _, BuildIn, BuildToIncrease) :- BuildToIncrease = BuildIn.
+
+checkAllBuilds(_, _, _, _, _, _, BuildIn, BuildToIncrease) :-
+        BuildIn \= [],
+        BuildToIncrease = BuildIn.
+
+checkAllBuilds(State, CardSelected, RestOfTestHand, Builds, SelectedValue, PlayedVal, BuildIn, BuildToIncrease) :-
+        [Build | Rest] = Builds,
+        getBuildValue(Build, BuildVal),
+        aiAssessBuildValue(SelectedValue, PlayedVal, BuildVal, Build, BuildFound),
+        checkAllBuilds(State, CardSelected, RestOfTestHand, Rest, SelectedValue, PlayedVal, BuildFound, BuildToIncrease).
 
 /**
 Clause Name: getBuildForUser
@@ -1261,6 +1493,10 @@ getBuildForUser(State, BuildsBeforeMove, BuildSelected) :-
         printBuilds(BuildsBeforeMove),
         read(BuildInput),
         assessBuildInput(State, BuildsBeforeMove, BuildInput, BuildSelected).
+
+getBuildForUser(State, [], _) :-
+        write("No builds available for increase. Try again."), nl,
+        playRound(State).
 
 /**
 Clause Name: assessBuildInput
@@ -1288,6 +1524,7 @@ Parameters:
 **/
 assessBuildValue(State, SelectedValue, PlayedVal, BuildVal) :-
         SelectedValue is PlayedVal + BuildVal.
+
 assessBuildValue(State, SelectedValue, PlayedVal, BuildVal) :-
         write("Cannot increase build. Build with value: "),
         write(BuildVal),
@@ -1296,6 +1533,22 @@ assessBuildValue(State, SelectedValue, PlayedVal, BuildVal) :-
         write(". Does not sum to card selected: "),
         write(SelectedValue), nl,
         playRound(State).
+
+/**
+Clause Name: aiAssessBuildValue
+Purpose: Used by AI to see if cards selected can increase the build.
+Parameters:
+        SelectedValue, Value of card selected.
+        PlayedVal, Value of card played.
+        BuildVal, Value that build sums to.
+        BuildToAssess, Build that is being assessed for increase.
+        BuildFound, If build can be increased, this variable will send it out of the clause. Else it will send an empty list.
+**/
+aiAssessBuildValue(SelectedValue, PlayedVal, BuildVal, BuildToAssess, BuildFound) :-
+        SelectedValue is PlayedVal + BuildVal,
+        BuildFound = BuildToAssess.
+
+aiAssessBuildValue(_, _, _, _, BuildFound) :- BuildFound = [].
 
 /**
 Clause Name: validateBuild
@@ -1308,9 +1561,40 @@ Parameters:
         CurrentPlayer, Player currently making move.
 **/
 validateBuild(State, BuildSelected, CurrentBuilds, BuildOwners, CurrentPlayer) :-
+        checkIsMultiBuild(State, BuildSelected),
         indexOf(CurrentBuilds, BuildSelected, Index), 
         nth0(Index, BuildOwners, Owner),
         checkIsOpponentsBuild(State, CurrentPlayer, Owner).
+
+aiValidateBuild(State, CardSelected, RestOfTestHand, BuildSelected, CurrentBuilds, BuildOwners, CurrentPlayer) :-
+        aiCheckIsMultiBuild(State, CardSelected, RestOfTestHand, BuildSelected),
+        indexOf(CurrentBuilds, BuildSelected, Index),
+        nth0(Index, BuildOwners, Owner),
+        aiCheckIsOpponentsBuild(State, CardSelected, RestOfTestHand, CurrentPlayer, Owner).
+
+/**
+Clause Name: checkIsMultiBuild
+Purpose: Checks to see if a build is a multi-build; if it is you cannot increase it.
+Parameters:
+        State, List of variables involved in current game state.
+        BuildSelected, Build selected by player to increase.
+**/
+checkIsMultiBuild(_, BuildSelected) :-
+        length(BuildSelected, 1).
+
+checkIsMultiBuild(State, _) :-
+        write("Cannot increase a multi-build. Try again."),
+        playRound(State).
+
+/**
+Clause Name: aiCheckIsMultiBuild
+Purpose: AI checks to see if a build is a multi-build; if it is, AI goes to check the next card in hand.
+**/
+aiCheckIsMultiBuild(_, _, _, BuildSelected) :-
+        length(BuildSelected, 1).
+
+aiCheckIsMultiBuild(State, CardSelected, RestOfTestHand, _) :-
+        checkCardsPlayed(State, CardSelected, RestOfTestHand, increase).
 
 /**
 Clause Name: checkIsOpponentsBuild
@@ -1326,6 +1610,21 @@ checkIsOpponentsBuild(State, CurrentPlayer, Owner) :-
 checkIsOpponentsBuild(State, _, _) :-
         write("This build belongs to you, increase move cannot be made. Try again."), nl,
         playRound(State).
+
+/**
+Clause Name: aiCheckIsOpponentsBuild
+Purpose: Used by AI to check if build selected belongs to opponent. If true, continues to check the next card in hand.
+Parameters:
+        State, List of variables involved in current game state.
+        CardSelected, Card selected to sum build to.
+        CurrentPlayer, Player currently making move.
+        Owner, Player that owns the build selected.
+**/
+aiCheckIsOpponentsBuild(_, _, _, CurrentPlayer, Owner) :-
+        CurrentPlayer \= Owner.
+
+aiCheckIsOpponentsBuild(State, CardSelected, RestOfTestHand, _, _) :-
+        checkCardsPlayed(State, CardSelected, RestOfTestHand, increase).
 
 /**
 Clause Name: replaceElement
@@ -1353,7 +1652,9 @@ Parameters:
         NewBuildOwners, New build owners list after ownership is changed.
 **/
 increaseBuild(CardPlayed, BuildSelected, IndexOfBuild, CurrentPlayer, BuildOwners, NewBuild, NewBuildOwners) :-
-        append(BuildSelected, [CardPlayed], NewBuild),
+        [Build | _] = BuildSelected,
+        append(Build, [CardPlayed], AppendedBuild),
+        NewBuild = [AppendedBuild],
         replaceElement(IndexOfBuild, BuildOwners, CurrentPlayer, NewBuildOwners).
 
 
