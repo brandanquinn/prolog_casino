@@ -407,6 +407,61 @@ getCurrentPlayersHand(State, CurrentPlayer, PlayerHand) :-
         getComputerHandFromState(State, PlayerHand).
 
 /**
+
+**/
+getCurrentPlayersPile(State, CurrentPlayer, PlayerPile) :-
+        CurrentPlayer = human,
+        getHumanPileFromState(State, PlayerPile).
+
+getCurrentPlayersPile(State, CurrentPlayer, PlayerPile) :-
+        CurrentPlayer = computer,
+        getComputerPileFromState(State, PlayerPile).
+
+/**
+Clause Name: getLengthOfList
+Purpose: Gets the length of a given list.
+Parameters:
+        List, list to get length of.
+        Tail, Value incrementing as we move through list to final position.
+        Length, Length of list after fully iterating. (Value of tail.)
+**/
+getLengthOfList(List, Length) :- getLengthOfList(List, 0, Length).
+
+getLengthOfList([], Length, Length).
+
+getLengthOfList([_ | Rest], Tail, Length) :-
+  NewTail is Tail + 1 ,
+  getLengthOfList(Rest, NewTail, Length).
+
+/**
+Clause Name: findMaxHeuristicOfList
+Purpose: Finds the maximum value of a list as well as its index. (Used specifically for finding best heuristic value for capture)
+Parameters:
+        List, List of values to find max.
+        MaxVal, Maximum value of list.
+        OldMax, Keeps track of prior maximum value - updated as necessary.
+        OldIndex, Keeps track of prior index of max value - updated as necessary.
+        CurrentIndex, Current index to keep track of iteration through list.
+        Index, Maximum index of list to be send out of clause.
+**/
+% Wrapper to call clause with max starting at 0.
+findMaxHeuristicOfList([Element | Rest], MaxVal, Index):-
+        findMaxHeuristicOfList(Rest , Element, 0, 0, MaxVal, Index).
+
+findMaxHeuristicOfList([], OldMax, OldIndex, _, OldMax, OldIndex).
+
+findMaxHeuristicOfList([Element | Rest], OldMax, _, CurrentIndex, MaxVal, Index):-
+    Element > OldMax,
+    NewCurrentIndex is CurrentIndex + 1,
+    NewIndex is NewCurrentIndex,
+    findMaxHeuristicOfList(Rest, Element, NewIndex, NewCurrentIndex, MaxVal, Index).
+
+findMaxHeuristicOfList([Element | Rest], OldMax, OldIndex, CurrentIndex, MaxVal, Index):-
+    Element =< OldMax,
+    NewCurrentIndex is CurrentIndex + 1,
+    findMaxHeuristicOfList(Rest, OldMax, OldIndex, NewCurrentIndex, MaxVal, Index).
+
+/**
 Clause Name: dealCards
 Purpose: Deals 4 cards.
 Parameters:
@@ -610,10 +665,14 @@ tryIncrease(State, Builds, StaticHand, DynamicHand) :-
         tryIncrease(State, Builds, StaticHand, Rest).
 
 /**
-
+Clause Name: tryExtendBuild
+Purpose: AI tries to extend player's build to a multi-build.
+Parameters:
+        State, List of all variables used in game state.
+        Builds, List of current builds on the table.
+        StaticHand, List of cards in player's hand. Is not changed.
+        DynamicHand, List of cards in player's hand to iterate through and select certain cards.
 **/
-
-
 tryExtendBuild(State, Builds, StaticHand, []) :-
         % Should call tryCapture here.
         tryBuild(State, Builds, StaticHand, StaticHand).
@@ -632,18 +691,97 @@ Parameters:
         StaticHand, List of cards in player's hand. Is not changed.
         DynamicHand, List of cards in player's hand to iterate through and select certain cards. 
 **/
-tryBuild(State, _, _, []) :-
+tryBuild(State, _, StaticHand, []) :-
         % Should call tryCapture here.
-        getTableCardsFromState(State, TableCards),
-        getComputerHandFromState(State, ComputerHand),
-        [CardSelected | _] = ComputerHand,
-        write('No moves found. Trailing: '), printCards([CardSelected]), nl,
-        trail(State, CardSelected, TableCards, _, ComputerHand, _).
+        tryCapture(State, StaticHand).
+        % getTableCardsFromState(State, TableCards),
+        % getComputerHandFromState(State, ComputerHand),
+        % [CardSelected | _] = ComputerHand,
+        % write('No moves found. Trailing: '), printCards([CardSelected]), nl,
+        % trail(State, CardSelected, TableCards, _, ComputerHand, _).
 
 tryBuild(State, Builds, StaticHand, DynamicHand) :-
         [CardSelected | Rest] = DynamicHand,
         checkCardsPlayed(State, CardSelected, StaticHand, build),
         tryBuild(State, Builds, StaticHand, Rest).
+
+/**
+
+**/
+tryCapture(State, PlayerHand) :-
+        getTableCardsFromState(State, TableCards),
+        getBuildsFromState(State, Builds),
+        generateCaptureHeuristics(PlayerHand, TableCards, Builds, _, HeuristicsList),
+        findMaxHeuristicOfList(HeuristicsList, MaxHeuristic, Index),
+        assessMaxHeuristic(State, PlayerHand, Index, MaxHeuristic),
+        nth0(Index, PlayerHand, BestCard),
+        aiCapture(State, TableCards, Builds, BestCard).
+
+/**
+
+**/
+assessMaxHeuristic(State, PlayerHand, Index, MaxHeuristic) :-
+        MaxHeuristic \= 0,
+        write('Best heuristic value is: '), write(MaxHeuristic),
+        nth0(Index, PlayerHand, BestCard),
+        write(' corresponding to card: '), printCards([BestCard]), nl.
+
+assessMaxHeuristic(State, PlayerHand, _, 0) :-
+        write('No other moves found, trailing first card in hand.'), nl,
+        [CardSelected | _] = PlayerHand,
+        getTableCardsFromState(State, TableCards),
+        getPlayNextFromState(State, CurrentPlayer),
+        getInputIfHuman(State, CurrentPlayer),
+        trail(State, CardSelected, TableCards, _, PlayerHand, _).
+
+
+getInputIfHuman(_, computer).
+
+getInputIfHuman(State, human) :-
+        write('AI recommends to trail: '), printCards([CardSelected]), write('will you make this move? (y/n): '),
+        read(Input),
+        assessAITrail(State, CurrentPlayer, Input).
+
+% Something is odd going on with getting current player.
+
+/**
+
+**/
+assessAITrail(_, CurrentPlayer, Input) :-
+        CurrentPlayer = human,
+        Input = y.
+
+assessAITrail(State, CurrentPlayer, n) :-
+        CurrentPlayer = human,
+        write('Player selected not to make AI recommended move. Restarting turn.'), nl,
+        playRound(State).
+
+
+/**
+
+**/
+generateCaptureHeuristics([], _, _, HeuristicsIn, HeuristicsOut) :- HeuristicsOut = HeuristicsIn.
+
+generateCaptureHeuristics(Hand, TableCards, Builds, HeuristicsIn, HeuristicsOut) :-
+        [CardPlayed | Rest] = Hand,
+        getCapturableCards(TableCards, CardPlayed, _, CapturableLooseCards),
+        getLengthOfList(CapturableLooseCards, NumberOfLooseCards),
+        removeCardsFromList(CapturableLooseCards, TableCards, TableCardsAfterSameVal),
+        getCapturableBuilds(CardPlayed, Builds, _, CapturableBuilds),
+        getLengthOfList(CapturableBuilds, NumberOfBuilds),
+        getCapturableSetsForAI(CardPlayed, TableCardsAfterSameVal, CapturableSets),
+        getLengthOfList(CapturableSets, NumberOfSets),
+        HeuristicVal is NumberOfLooseCards + NumberOfBuilds + NumberOfSets,
+        append(HeuristicsIn, [HeuristicVal], TempList),
+        generateCaptureHeuristics(Rest, TableCards, Builds, TempList, HeuristicsOut).
+
+
+
+getCapturableSetsForAI(CardPlayed, TableCards, CapturableSets) :-
+        getAllSubsets(TableCards, SubsetList),
+        removeCardFromList([], SubsetList, UpdatedList),
+        getValue(CardPlayed, CaptureValue),
+        findCapturableSubsets(TableCards, UpdatedList, CaptureValue, _, CapturableSets).
 
 /**
 Clause Name: checkCardsPlayed
@@ -887,16 +1025,29 @@ getAllSubsets(TableCards, SubsetList) :-
         findall(X, subset(TableCards, X), SubsetList).
 
 /**
-
+Clause Name: subset
+Purpose: Find subsets of given list.
+Parameters:
+        ListInput, List provided by user (in this case will be cards on table)
+        ListOutput, Uninstantiated variable to pass subsets back through the clause.
 **/
 subset([], []).
-subset([E|Tail], [E|NTail]):-
-  subset(Tail, NTail).
-subset([_|Tail], NTail):-
-  subset(Tail, NTail).
+
+subset([Element | Rest], [Element | Rest2]):-
+  subset(Rest, Rest2).
+
+subset([_ | Rest ], Rest2):-
+  subset(Rest, Rest2).
 
 /**
-
+Clause Name: findViableSubset
+Purpose: Evaluate each generated subset and find one that has needed sum value.
+Parameters:
+        SubsetList, List of all possible subsets.
+        SelectedValue, Value of card selected to sum build to.
+        PlayedVal, Value of card played into the build.
+        SetIn, Uninstantiated variable to generate set within clause.
+        SetOut, Uninstantiated variable to send set found back out of clause.
 **/
 findViableSubset([], _, _, [], SetOut) :- SetOut = [].
 
@@ -913,11 +1064,51 @@ findViableSubset(SubsetList, SelectedValue, PlayedVal, SetIn, SetOut) :-
 /**
 
 **/
+findCapturableSubsets(_, [], _, SetsIn, SetsOut) :- SetsOut = SetsIn.
+
+findCapturableSubsets(TableCards, SubsetList, CaptureValue, SetsIn, SetsOut) :-
+        [Set | Rest] = SubsetList,
+        getSetValue(Set, 0, SetVal),
+        assessSetValForCapture(SetVal, CaptureValue, Set, SetAfterAssessment, SetsIn, SetsAfterAssess),
+        capturableSetFound(SetAfterAssessment, TableCards, UpdatedTableCards, Rest, UpdatedSubsetList),
+        findCapturableSubsets(UpdatedTableCards, UpdatedSubsetList, CaptureValue, SetsAfterAssess, SetsOut).
+
+capturableSetFound(Set, TableCards, TableCardsOut, SubsetList, SubsetListOut) :-
+        Set = [],
+        TableCardsOut = TableCards,
+        SubsetListOut = SubsetList.
+
+capturableSetFound(Set, TableCards, TableCardsOut, _, SubsetListOut) :-
+        removeCardsFromList(Set, TableCards, TableCardsOut),
+        getAllSubsets(TableCardsOut, SubsetListOut).
+
+/**
+Clause Name: assessSetVal
+Purpose: Check value of set to see if it is viable.
+Parameters:
+        SetVal, Value of set found.
+        SelectedValue, Value that set + played card must sum to.
+        PlayedVal, Value of card played.
+        ViableSet, Set passed in for assessment.
+        SetAfterAssessment, If set passed assessment, it is send back here. Else it will be instantiated to [].
+**/
 assessSetVal(SetVal, SelectedValue, PlayedVal, ViableSet, SetAfterAssessment) :-
         SelectedValue is SetVal + PlayedVal,
         SetAfterAssessment = ViableSet.
 
 assessSetVal(_, _, _, _, SetAfterAssessment) :- SetAfterAssessment = [].
+
+/**
+
+**/
+assessSetValForCapture(SetVal, CaptureValue, SetToAssess, SetAfterAssessment, SetsIn, SetsOut) :-
+        CaptureValue = SetVal,
+        SetAfterAssessment = SetToAssess,
+        append(SetsIn, [SetToAssess], SetsOut).
+
+assessSetValForCapture(_, _, _, SetAfterAssessment, SetsIn, SetsOut) :- 
+        SetAfterAssessment = [],
+        SetsOut = SetsIn.
 
 /**
 Clause Name: selectCard
@@ -1086,6 +1277,19 @@ getPlayerHands(State, CurrentPlayer, HandAfterMove, HumanHand, ComputerHand) :-
         CurrentPlayer = computer,
         ComputerHand = HandAfterMove,
         getHumanHandFromState(State, HumanHand).
+
+/**
+
+**/
+getPlayerPiles(State, CurrentPlayer, PileAfterMove, HumanPile, ComputerPile) :-
+        CurrentPlayer = human,
+        HumanPile = PileAfterMove,
+        getComputerPileFromState(State, ComputerPile).
+
+getPlayerPiles(State, CurrentPlayer, PileAfterMove, HumanPile, ComputerPile) :-
+        CurrentPlayer = computer,
+        ComputerPile = PileAfterMove,
+        getHumanPileFromState(State, HumanPile).
 
 /**
 Clause Name: trail
@@ -1261,9 +1465,14 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         playRound(NewState).
 
 /**
-
+Clause Name: aiExtendBuild
+Purpose: AI build algo for extending to a multi-build
+Parameters:
+        State, list of variables involved in current game state.
+        CardSelected, Card selected by AI to sum the build to.
+        CardPlayed, Card selected by AI to play into a build.
+        RestOfTestHand, Rest of hand that needs to be tested by AI.
 **/
-% AI build algo for extending to a multi-build
 aiExtendBuild(State, CardSelected, CardPlayed, RestOfTestHand) :-
         getValue(CardSelected, SelectedValue),
         getValue(CardPlayed, PlayedVal),
@@ -1299,7 +1508,15 @@ aiExtendBuild(State, CardSelected, CardPlayed, RestOfTestHand) :-
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCardsAfterMove, BuildsAfterMove, BuildOwners, LastCapturer, GameDeck, NextPlayer],
         playRound(NewState).
 
-% AI Build algo for single build creation.
+/**
+Clause Name: aiBuild
+Purpose: AI Build algo for single build creation.
+Parameters:
+        State, list of variables involved in current game state.
+        CardSelected, Card selected by AI to sum the build to.
+        CardPlayed, Card selected by AI to play into a build.
+        RestOfTestHand, Rest of hand that needs to be tested by AI.
+**/
 aiBuild(State, CardSelected, CardPlayed, RestOfTestHand) :-
         getPlayNextFromState(State, CurrentPlayer),
         getBuildsFromState(State, Builds),
@@ -1333,7 +1550,16 @@ aiBuild(State, CardSelected, CardPlayed, RestOfTestHand) :-
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, LastCapturer, GameDeck, NextPlayer],
         playRound(NewState).
 
-
+/**
+Clause Name: checkBuildFound
+Purpose: Checks build found for extension and makes sure it is viable.
+Parameters:
+        State, List of variables involved in current game state.
+        CardSelected, Card selected by AI to sum the build to.
+        RestOfTestHand, Rest of hand to be tested by AI.
+        BuildFound, Build found to extend.
+        MoveType, Type of move being assessed by the AI.
+**/
 checkBuildFound(State, CardSelected, RestOfTestHand, BuildFound, MoveType) :-
         getBuildValue(BuildFound, BuildVal),
         getValue(CardSelected, SelectedValue),
@@ -1490,7 +1716,15 @@ validateBuildCreated(State, BuildVal, SelectedValue) :-
         playRound(State).
 
 /**
-
+Clause Name: aiValidateBuildCreated
+Purpose: Check to make sure build created by AI has the correct values.
+Parameters: 
+        State, List of variables involved in current game state.
+        CardSelected, Card selected to sum build to.
+        RestOfTestHand, Remaining hand that AI needs to test for each move.
+        BuildVal, Value that build sums to.
+        SelectedValue, Value of card selected to sum build to.
+        MoveType, Type of move that AI is currently checking.
 **/
 aiValidateBuildCreated(_, _, _, BuildVal, SelectedValue, _) :-
         BuildVal = SelectedValue.
@@ -1948,6 +2182,50 @@ capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeM
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHandAfterMove, HumanPileAfterMove, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, CurrentPlayer, GameDeck, NextPlayer],
         playRound(NewState).
 
+aiCapture(State, TableCards, Builds, CardPlayed) :-
+        getCapturableCards(TableCards, CardPlayed, _, CapturableLooseCards),
+        getPlayNextFromState(State, CurrentPlayer),
+        removeCardsFromList(CapturableLooseCards, TableCards, TableCardsAfterSameVal),
+        getCapturableBuilds(CardPlayed, Builds, _, CapturableBuilds),
+        getCapturableSetsForAI(CardPlayed, TableCardsAfterSameVal, CapturableSets),
+        getCurrentPlayersHand(State, CurrentPlayer, PlayerHand),
+        capturerIsHuman(State, PlayerHand, CurrentPlayer, CapturableLooseCards, CapturableBuilds, CapturableBuildsAfterPrompt, CapturableSets, CapturableSetsAfterPrompt),
+        % need to update model
+        getBuildOwnersFromState(State, BuildOwners),
+        removeBuildOwners(CapturableBuildsAfterPrompt, Builds, BuildOwners, NewBuildOwners),
+        removeSetsFromList(CapturableBuildsAfterPrompt, Builds, BuildsAfterMove),
+        flattenList(CapturableSets, _, CapturableSetsAsList),
+        removeSetsFromList(CapturableSetsAsList, TableCardsAfterSameVal, TableCardsAfterMove),
+        getCurrentPlayersPile(State, CurrentPlayer, PlayerPile),
+        append(PlayerPile, [CardPlayed], PlayerPileWithCaptureCard),
+        flattenList(CapturableBuildsAfterPrompt, _, BuildCardsCaptured),
+        flattenList(BuildCardsCaptured, _, FlatBuildsCaptured),
+        append(PlayerPileWithCaptureCard, FlatBuildsCaptured, PlayerPileWithBuilds),
+        append(PlayerPileWithBuilds, CapturableLooseCards, PlayerPileWithSameVal),
+        append(PlayerPileWithSameVal, CapturableSetsAsList, PlayerPileWithSets),
+        removeCardFromList(CardPlayed, PlayerHand, PlayerHandAfterMove),
+        getRoundNumFromState(State, RoundNum),
+        getDeckFromState(State, GameDeck),
+        getHumanScoreFromState(State, HumanScore),
+        getComputerScoreFromState(State, ComputerScore),
+        getPlayerHands(State, CurrentPlayer, PlayerHand, HumanHand, ComputerHand),
+        getPlayerPiles(State, CurrentPlayer,  PlayerPileWithSets, HumanPile, ComputerPile),
+        whosPlayingNext(CurrentPlayer, NextPlayer),
+        NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, CurrentPlayer, GameDeck, NextPlayer], 
+        playRound(NewState).
+
+/**
+
+**/
+capturerIsHuman(State, PlayerHand, CurrentPlayer, CapturableLooseCards, CapturableBuilds, CapturableBuildsAfterPrompt, CapturableSets, CapturableSetsAfterPrompt) :-
+        CurrentPlayer = human,
+        promptSameFaceCapture(State, CapturableLooseCards),
+        promptBuildCapture(State, PlayerHand, CapturableBuilds, CapturableBuildsAfterPrompt),
+        allowSetCapture(State, CapturableSets, CapturableSetsAfterPrompt).
+
+
+capturerIsHuman(_, _, computer, CapturableLooseCards, CapturableBuilds, CapturableBuilds, CapturableSets, CapturableSets).
+
 /**
 Clause Name: promptSameFaceCapture
 Purpose: Prompt a user whether or not they want to capture same face cards.
@@ -1955,16 +2233,26 @@ Parameters:
         State, list of vars in game state.
         CapturableCards, List of capturable cards
 **/
-promptSameFaceCapture(State, CapturableCards) :- CapturableCards = [].
+promptSameFaceCapture(State, []).
 promptSameFaceCapture(State, CapturableCards) :-
         write('Do you want to capture the following cards? (y/n): '),
         printCards(CapturableCards),
         read(Input),
+        assessSameFaceInput(State, Input).
+
+/**
+
+**/
+assessSameFaceInput(State, Input) :-
         Input = n,
         write('Must capture all same face cards on the table. Try again.'), nl,
         playRound(State).
 
-promptSameFaceCapture(State, CapturableCards).
+assessSameFaceInput(_, y).
+
+assessSameFaceInput(State, _) :-
+        write('Invalid input. Try again.'), nl,
+        playRound(State).
 
 /**
 Clause Name: promptBuildCapture
@@ -1982,6 +2270,28 @@ promptBuildCapture(State, PlayerHand, CapturableBuilds, CapturableBuildsAfterPro
         printBuilds(CapturableBuilds),
         read(Input),
         validateBuildInput(State, PlayerHand, Input, CapturableBuilds, CapturableBuildsAfterPrompt).
+
+/**
+
+**/
+allowSetCapture(State, CapturableSets, CapturableSetsAfter) :-
+        write('Do you want to capture the following sets? (y/n): '),
+        printSets(CapturableSets),
+        read(Input),
+        assessSetCaptureInput(State, Input, CapturableSets, CapturableSetsAfter).
+
+/**
+
+**/
+assessSetCaptureInput(_, Input, CapturableSets, CapturableSetsAfter) :-
+        Input = y,
+        CapturableSetsAfter = CapturableSets.
+
+assessSetCaptureInput(_, n, _, []).
+
+assessSetCaptureInput(State, _, _, _) :-
+        write('Invalid input. Try again.'), nl,
+        playRound(State).
 
 /**
 Clause Name: validateBuildInput
