@@ -70,6 +70,13 @@ setupRound() :-
         printBoard(State, HumanPile, HumanHandBeforeMove, TableCardsBeforeMove, ComputerPile, ComputerHandBeforeMove),               
         playRound(State).
 
+
+assessRound(State) :-
+        getDeckFromState(State, GameDeck),
+        getHumanHandFromState(State, HumanHand),
+        getComputerHandFromState(State, ComputerHand),
+        isRoundOver(State, GameDeck, HumanHand, ComputerHand).
+
 /**
 Clause Name: playRound
 Purpose: Begin playing current round

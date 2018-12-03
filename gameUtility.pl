@@ -174,6 +174,7 @@ getCurrentPlayersHand(State, CurrentPlayer, PlayerHand) :-
         CurrentPlayer = computer,
         getComputerHandFromState(State, PlayerHand).
 
+
 /**
 Clause Name: getCurrentPlayersPile
 Purpose: Get pile of current player making move.
@@ -279,13 +280,6 @@ getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected) :-
         read(Input),
         getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
         write('Cards selected from table: '), printCards(FinalCardsSelected), nl.
-
-aiGetTableCardsForBuild(CardSelected, CardPlayed, TableCards, FinalCardsSelected) :-
-        getAllSubsets(TableCards, SubsetList),
-        removeCardFromList([], SubsetList, UpdatedList),
-        getValue(CardSelected, SelectedValue),
-        getSetValue([CardPlayed], 0, PlayedVal),
-        findViableSubset(UpdatedList, SelectedValue, PlayedVal, _, FinalCardsSelected).
 
 /**
 Clause Name: getAllSubsets
@@ -631,3 +625,263 @@ assessOwnership(State, BuildOwner, CurrentPlayer) :-
         BuildOwner = CurrentPlayer,
         write('Trail move cannot be made. You currently own a build.'), nl,
         playRound(State).
+
+/**
+
+**/
+isRoundOver(State, GameDeck, HumanHand, ComputerHand) :-
+        handsEmpty(State, HumanHand, ComputerHand),
+        deckEmpty(State, GameDeck),
+        write('--------------------------------'), nl,
+        write('Round is over'), nl,
+        % round is over
+        getLastCapturerFromState(State, LastCapturer),
+        getTableCardsFromState(State, RemainingTableCards),
+        addTableCardsToLastCapturer(State, LastCapturer, RemainingTableCards, HumanPile, ComputerPile),
+        computeScores(State, HumanPile, ComputerPile, HumanScore, ComputerScore),
+        getRoundNumFromState(State, OldRoundNum),
+        shuffleDeck(NewGameDeck, GameDeckBeforeMove),
+        dealCards(GameDeckBeforeMove, HNewGameDeck, HumanHandBeforeMove),
+        dealCards(HNewGameDeck, CNewGameDeck, ComputerHandBeforeMove),
+        dealCards(CNewGameDeck, TNewGameDeck, TableCardsBeforeMove),
+        RoundNum is OldRoundNum + 1,
+        NewHumanPile = [],
+        NewComputerPile = [],
+        Builds = [],
+        BuildOwners = [],
+        NewLastCapturer = none,
+        NewState = [RoundNum, ComputerScore, ComputerHandBeforeMove, NewComputerPile, HumanScore, HumanHandBeforeMove, NewHumanPile, TableCardsBeforeMove, Builds, BuildOwners, NewLastCapturer, TNewGameDeck, LastCapturer],
+        printBoard(NewState, NewHumanPile, HumanHandBeforeMove, TableCardsBeforeMove, NewComputerPile, ComputerHandBeforeMove),               
+        playRound(NewState).
+
+
+/**
+Clause Name: handsEmpty
+Purpose: If both players hands are empty, continue checking if round is over. Else continue playing current round.
+Parameters: 
+        State, List of variables in current game state.
+        HumanHand, List of cards in human player's hand.
+        ComputerHand, List of cards in computer player's hand.
+**/
+handsEmpty(_, HumanHand, ComputerHand) :-
+        HumanHand = [],
+        ComputerHand = [].
+
+handsEmpty(State, _, _) :-
+        playRound(State).
+
+/**
+Clause Name: deckEmpty
+Purpose: If the game deck is empty, continue checking if round is over. Else continue playing current round.
+Parameters:
+        State, List of variables in current game state.
+        GameDeck, List of cards in current game deck.
+**/
+deckEmpty(_, GameDeck) :-
+        GameDeck = [].
+
+deckEmpty(State, _) :-
+        playRound(State).
+
+/**
+Clause Name: addTableCardsToLastCapturer
+Purpose: Add remaining table cards to the pile of the last capturer, if no last capturer exists - get piles and move on.
+Parameters:
+        State, List of variables involved in current game state.
+        LastCapturer, Player that last captured cards.
+        RemainingTableCards, Cards that remain on the table.
+        HumanPile, U/I variable that will send current human pile out of clause.
+        ComputerPile, U/I variable that will send current computer pile out of clause.
+**/
+addTableCardsToLastCapturer(State, LastCapturer, RemainingTableCards, HumanPile, ComputerPile) :-
+        LastCapturer = human,
+        getHumanPileFromState(State, HumanPileBefore),
+        append(HumanPileBefore, RemainingTableCards, HumanPile),
+        getComputerPileFromState(State, ComputerPile).
+
+addTableCardsToLastCapturer(State, LastCapturer, RemainingTableCards, HumanPile, ComputerPile) :-
+        LastCapturer = computer,
+        getComputerPileFromState(State, ComputerPileBefore),
+        append(ComputerPileBefore, RemainingTableCards, ComputerPile),
+        getHumanPileFromState(State, HumanPile).
+
+addTableCardsToLastCapturer(_, LastCapturer, _, HumanPile, ComputerPile) :-
+        LastCapturer = none,
+        getHumanPileFromState(State, HumanPile),
+        getComputerPileFromState(State, ComputerPile).
+
+/**
+
+**/
+computeScores(State, HumanPile, ComputerPile, HumanScore, ComputerScore) :-
+        % get current scores
+        getHumanScoreFromState(State, HumanScoreBefore),
+        getComputerScoreFromState(State, ComputerScoreBefore),
+        % player with most cards in pile gets 3 points
+        getLengthOfList(HumanPile, HumanPileSize),
+        getLengthOfList(ComputerPile, ComputerPileSize),
+        assessPileSize(HumanPileSize, ComputerPileSize, HumanScoreBefore, HumanScoreAfterLength, ComputerScoreBefore, ComputerScoreAfterLength),
+        % print piles
+        write('Human Pile: '), printCards(HumanPile), nl,
+        write('Computer Pile: '), printCards(ComputerPile), nl,
+        % player with most spades gets 1 point
+        numberOfSpades(HumanPile, 0, HumanSpadesCount),
+        numberOfSpades(ComputerPile, 0, ComputerSpadesCount),
+        write('Number of spades cards in human pile: '), write(HumanSpadesCount), nl,
+        write('Number of spades cards in computer pile: '), write(ComputerSpadesCount), nl,
+        assessNumSpades(HumanSpadesCount, ComputerSpadesCount, HumanScoreAfterLength, HumanScoreAfterSpades, ComputerScoreAfterLength, ComputerScoreAfterSpades),
+        % player with 10 of diamonds gets 2 points
+        findSpecificCards(HumanPile, HumanScoreAfterSpades, HumanScore),
+        findSpecificCards(ComputerPile, ComputerScoreAfterSpades, ComputerScore),
+        HumanScoreEarned is HumanScore - HumanScoreBefore,
+        ComputerScoreEarned is ComputerScore - ComputerScoreBefore,
+        write('Points earned by human: '), write(HumanScoreEarned), nl,
+        write('Points earned by computer: '), write(ComputerScoreEarned), nl,
+        write('Human Current Score: '), write(HumanScore), nl,
+        write('Computer Current Score: '), write(ComputerScore), nl.
+
+
+
+/**
+Clause Name: assessPileSize
+Purpose: Gives player with most cards in pile 3 points, if piles are equal no points given out.
+Parameters:
+        HumanPileSize, Size of human pile.
+        ComputerPileSize, Size of computer pile.
+        HumanScoreIn, Current human score.
+        HumanScoreOut, U/I variable to send updated human score out of clause.
+        ComputerScoreIn, Current computer score.
+        ComputerScoreOut, U/I variable to send updated computer score out of clause.
+**/
+assessPileSize(HumanPileSize, ComputerPileSize, HumanScoreIn, HumanScoreOut, ComputerScoreIn, ComputerScoreOut) :-
+        HumanPileSize > ComputerPileSize,
+        HumanScoreOut is HumanScoreIn + 3,
+        ComputerScoreOut = ComputerScoreIn.
+
+assessPileSize(HumanPileSize, ComputerPileSize, HumanScoreIn, HumanScoreOut, ComputerScoreIn, ComputerScoreOut) :-
+        ComputerPileSize > HumanPileSize,
+        ComputerScoreOut is ComputerScoreIn + 3,
+        HumanScoreOut = HumanScoreIn.
+
+assessPileSize(HumanPileSize, ComputerPileSize, HumanScoreIn, HumanScoreOut, ComputerScoreIn, ComputerScoreOut) :-
+        HumanPileSize = ComputerPileSize,
+        HumanScoreOut = HumanScoreIn,
+        ComputerScoreOut = ComputerScoreIn.
+
+/**
+Clause Name: numberOfSpades
+Purpose: Computes the number of spades cards in a players pile.
+Parameters:
+        PlayerPile, List of cards in players pile.
+        SpadesCountIn, Used to count number of spades cards (starting at 0).
+        SpadesCountOut, U/I variable used to send computed spades count out of clause.
+**/
+numberOfSpades([], SpadesCountIn, SpadesCountIn).
+
+numberOfSpades(PlayerPile, SpadesCountIn, SpadesCountOut) :-
+        [Card | Rest] = PlayerPile,
+        (Suit, _) = Card,
+        assessSuit(Suit, SpadesCountIn, NewSpadesCount),
+        numberOfSpades(Rest, NewSpadesCount, SpadesCountOut).
+
+/**
+Clause Name: assessSuit
+Purpose: If suit of card is spades, increments spades count, else spades count remains the same.
+Parameters:
+        Suit, Suit of card being assessed.
+        SpadesCountIn, Current number of spades cards in players pile.
+        SpadesCountOut, U/I variable used to send updated spades count back out of clause.
+**/
+assessSuit(Suit, SpadesCountIn, SpadesCountOut) :-
+        Suit = s,
+        SpadesCountOut is SpadesCountIn + 1.
+
+assessSuit(_, SpadesCountIn, SpadesCountIn).
+
+
+/**
+Clause Name: assessNumSpades
+Purpose: Gives the player with more spades cards in their pile one point, if they have the same number, scores remain the same.
+Parameters:
+        HumanSpadesCount, Number of spades in humans pile.
+        ComputerSpadesCount, Number of spades in computers pile.
+        HumanScoreIn, Current human players score.
+        HumanScoreOut, U/I variable to send updated human score out of clause.
+        ComputerScoreIn, Current computer players score.
+        ComputerScoreOut, U/I variable to send updated computer score out of clause.
+**/
+assessNumSpades(HumanSpadesCount, ComputerSpadesCount, HumanScoreIn, HumanScoreOut, ComputerScoreIn, ComputerScoreOut) :-
+        HumanSpadesCount > ComputerSpadesCount,
+        HumanScoreOut is HumanScoreIn + 1,
+        ComputerScoreOut = ComputerScoreIn.
+
+assessNumSpades(HumanSpadesCount, ComputerSpadesCount, HumanScoreIn, HumanScoreOut, ComputerScoreIn, ComputerScoreOut) :-
+        ComputerSpadesCount > HumanSpadesCount,
+        ComputerScoreOut is ComputerScoreIn + 1,
+        HumanScoreOut = HumanScoreIn.
+
+assessNumSpades(HumanSpadesCount, ComputerSpadesCount, HumanScoreIn, HumanScoreOut, ComputerScoreIn, ComputerScoreOut) :-
+        ComputerSpadesCount = HumanSpadesCount,
+        HumanScoreOut = HumanScoreIn,
+        ComputerScoreOut = ComputerScoreIn.
+
+/**
+Clause Name: findSpecificCards
+Purpose: Checks through players pile and if they have the 10 of diamonds, adds 2 points to their score.
+Parameters:
+        PlayerPile, List of cards in players pile.
+        PlayerScoreIn, Current players score.
+        PlayerScoreOut, U/I variable to send updated score out of clause.
+**/
+findSpecificCards(PlayerPile, PlayerScoreIn, PlayerScoreOut) :-
+        PlayerPile = [],
+        PlayerScoreOut = PlayerScoreIn.
+
+findSpecificCards(PlayerPile, PlayerScoreIn, PlayerScoreOut) :-
+        [Card | Rest] = PlayerPile,
+        isCardTenOfDiamonds(Card, PlayerScoreIn, PlayerScoreAfterTenDiamonds),
+        isCardTwoOfSpades(Card, PlayerScoreAfterTenDiamonds, PlayerScoreAfterTwoSpades),
+        isCardAce(Card, PlayerScoreAfterTwoSpades, PlayerScoreAfterAces),
+        findSpecificCards(Rest, PlayerScoreAfterAces, PlayerScoreOut).
+        
+/**
+Clause Name: isCardTenOfDiamonds
+Purpose: Check if card in pile is the ten of diamonds.
+Parameters:
+        Card, card being assessed.
+        PlayerScoreIn, Current players score.
+        PlayerScoreOut, U/I variable to send updated score out of clause.
+**/
+isCardTenOfDiamonds(Card, PlayerScoreIn, PlayerScoreOut) :-
+        Card = (d, x),
+        PlayerScoreOut is PlayerScoreIn + 2.
+
+isCardTenOfDiamonds(_, PlayerScoreIn, PlayerScoreOut) :-
+        PlayerScoreOut = PlayerScoreIn.
+
+/**
+Clause Name: isCardTwoOfSpades
+Purpose: Check if card in pile is the two of spades.
+Parameters:
+        Card, card being assessed.
+        PlayerScoreIn, Current players score.
+        PlayerScoreOut, U/I variable to send updated score out of clause.
+**/
+isCardTwoOfSpades(Card, PlayerScoreIn, PlayerScoreOut) :-
+        Card = (s, 2),
+        PlayerScoreOut is PlayerScoreIn + 1.
+
+isCardTwoOfSpades(_, PlayerScoreIn, PlayerScoreOut) :-
+        PlayerScoreOut = PlayerScoreIn.
+
+/**
+
+**/
+isCardAce((_, Type), PlayerScoreIn, PlayerScoreOut) :-
+        Type = a,
+        PlayerScoreOut is PlayerScoreIn + 1.
+
+isCardAce(_, PlayerScoreIn, PlayerScoreOut) :-
+        PlayerScoreOut = PlayerScoreIn.
+
+

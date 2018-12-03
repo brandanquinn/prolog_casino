@@ -16,7 +16,8 @@ Parameters:
         StaticHand, List of cards in player's hand. Is not changed.
         DynamicHand, List of cards in player's hand to iterate through and select certain cards.
 **/
-tryIncrease(State, [], StaticHand, _) :-
+tryIncrease(State, Builds, StaticHand, _) :-
+        Builds = [],
         tryBuild(State, [], StaticHand, StaticHand).
 
 tryIncrease(State, Builds, StaticHand, []) :-
@@ -129,11 +130,11 @@ assessAITrail(_, y).
 
 assessAITrail(State, n) :-
         write('Player selected not to make AI recommended move. Restarting turn.'), nl,
-        playRound(State).
+        assessRound(State).
 
 assessAITrail(State, _) :-
         write('Invalid input. Try again.'), nl,
-        playRound(State).
+        assessRound(State).
 
 
 /**
@@ -229,16 +230,22 @@ checkCardsPlayed(State, CardSelected, [], MoveType) :-
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = increase,
         [CardPlayed | Rest] = Hand,
+        % isCaptureCard(State, CardSelected, CardPlayed, Hand, MoveType),
+        assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
         aiIncrease(State, CardSelected, CardPlayed, Rest).
 
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = extend,
         [CardPlayed | Rest] = Hand,
+        % isCaptureCard(State, CardSelected, CardPlayed, Hand, MoveType),
+        assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
         aiExtendBuild(State, CardSelected, CardPlayed, Rest).
 
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = build,
         [CardPlayed | Rest] = Hand,
+        % isCaptureCard(State, CardSelected, CardPlayed, Hand, MoveType),
+        assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
         aiBuild(State, CardSelected, CardPlayed, Rest).
 
 /**
@@ -257,9 +264,9 @@ assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType) :-
         getCurrentPlayersHand(State, CurrentPlayer, PlayerHand),
         getBuildsFromState(State, Builds),
         getSubHand(CardSelected, PlayerHand, UpdatedHand),
-        selectNewCardForAssessment(State, Builds, UpdatedHand, MoveType).
+        selectNewCardForAssessment(State, CardSelected, UpdatedHand, MoveType).
 
-assessCardPlayed(_, CardSelected, CardPlayed) :-
+assessCardPlayed(_, CardSelected, CardPlayed, _, _) :-
         CardSelected \= CardPlayed.
 
 /**
@@ -271,14 +278,14 @@ Parameters:
         Hand, List of cards left to test in player's hand.
         MoveType, Type of move currently being assessed by AI.
 **/
-selectNewCardForAssessment(State, Builds, Hand, increase) :-
-        tryIncrease(State, Builds, Hand, Hand).
+selectNewCardForAssessment(State, CardSelected, Hand, increase) :-
+        checkCardsPlayed(State, CardSelected, Hand, increase).
 
-selectNewCardForAssessment(State, Builds, Hand, extend) :-
-        tryExtendBuild(State, Builds, Hand, Hand).
+selectNewCardForAssessment(State, CardSelected, Hand, extend) :-
+        checkCardsPlayed(State, CardSelected, Hand, extend).
 
-selectNewCardForAssessment(State, Builds, Hand, build) :-
-        tryBuild(State, Builds, Hand, Hand).
+selectNewCardForAssessment(State, CardSelected, Hand, build) :-
+        checkCardsPlayed(State, CardSelected, Hand, build).
 
 
 /**
@@ -327,6 +334,22 @@ findMaxHeuristicOfList([Element | Rest], OldMax, OldIndex, CurrentIndex, MaxVal,
     findMaxHeuristicOfList(Rest, OldMax, OldIndex, NewCurrentIndex, MaxVal, Index).
 
 /**
+Clause Name: aiGetTableCardsForBuild
+Purpose: Searches all possible subsets of cards on the table and finds a set of cards you can start a build with.
+Parameters:
+        CardSelected, Card selected to sum build to.
+        CardPlayed, Card to be played into build.
+        TableCards, List of cards on the table.
+        FinalCardsSelected, U/I variable to send subset found out of clause.
+**/
+aiGetTableCardsForBuild(CardSelected, CardPlayed, TableCards, FinalCardsSelected) :-
+        getAllSubsets(TableCards, SubsetList),
+        removeCardFromList([], SubsetList, UpdatedList),
+        getValue(CardSelected, SelectedValue),
+        getSetValue([CardPlayed], 0, PlayedVal),
+        findViableSubset(UpdatedList, SelectedValue, PlayedVal, _, FinalCardsSelected).
+
+/**
 Clause Name: aiExtendBuild
 Purpose: AI build algo for extending to a multi-build
 Parameters:
@@ -368,7 +391,7 @@ aiExtendBuild(State, CardSelected, CardPlayed, RestOfTestHand) :-
         whosPlayingNext(CurrentPlayer, NextPlayer),
         getLastCapturerFromState(State, LastCapturer),        
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCardsAfterMove, BuildsAfterMove, BuildOwners, LastCapturer, GameDeck, NextPlayer],
-        playRound(NewState).
+        assessRound(NewState).
 
 /**
 Clause Name: aiBuild
@@ -410,7 +433,7 @@ aiBuild(State, CardSelected, CardPlayed, RestOfTestHand) :-
         whosPlayingNext(CurrentPlayer, NextPlayer),
         getLastCapturerFromState(State, LastCapturer),        
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, LastCapturer, GameDeck, NextPlayer],
-        playRound(NewState).
+        assessRound(NewState).
 
         /**
 Clause Name: checkBuildFound
@@ -536,7 +559,7 @@ aiIncrease(State, CardSelected, CardPlayed, RestOfTestHand) :-
         whosPlayingNext(CurrentPlayer, NextPlayer),
         getLastCapturerFromState(State, LastCapturer),
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCards, BuildsAfterMove, NewBuildOwners, LastCapturer, GameDeck, NextPlayer],
-        playRound(NewState).
+        assessRound(NewState).
 
 /**
 Clause Name: humanCheckIncrease
@@ -567,11 +590,11 @@ assessAIConfirmation(_, Input) :-
 assessAIConfirmation(State, Input) :-
         Input = n,
         write('You have selected not to make AI recommended move. Restarting turn.'), nl,
-        playRound(State).
+        assessRound(State).
 
 assessAIConfirmation(State, _) :-
         write('Invalid input. Try again'),
-        playRound(State).
+        assessRound(State).
 
 /**
 Clause Name: aiCheckValuesSelected
@@ -735,7 +758,7 @@ aiCapture(State, TableCards, Builds, CardPlayed) :-
         getPlayerPiles(State, CurrentPlayer,  PlayerPileWithSets, HumanPile, ComputerPile),
         whosPlayingNext(CurrentPlayer, NextPlayer),
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, CurrentPlayer, GameDeck, NextPlayer], 
-        playRound(NewState).
+        assessRound(NewState).
 
 /**
 Clause Name: capturerIsHuman
@@ -757,7 +780,10 @@ capturerIsHuman(State, PlayerHand, CurrentPlayer, CapturableLooseCards, Capturab
         checkCapturableCards(State, CapturableLooseCards, CapturableBuildsAfterPrompt, CapturableSetsAfterPrompt).
 
 
-capturerIsHuman(_, _, computer, CapturableLooseCards, CapturableBuilds, CapturableBuilds, CapturableSets, CapturableSets).
+capturerIsHuman(_, _, computer, CapturableLooseCards, CapturableBuilds, CapturableBuilds, CapturableSets, CapturableSets) :-
+        write('Computer will capture same face card(s): '), printCards(CapturableLooseCards), nl,
+        write('Builds: '), printBuilds(CapturableBuilds), nl,
+        write('and Sets: '), printSets(CapturableSets), nl.
 
 
 /**
@@ -789,11 +815,12 @@ assessSetCaptureInput(_, Input, CapturableSets, CapturableSetsAfter) :-
         Input = y,
         CapturableSetsAfter = CapturableSets.
 
-assessSetCaptureInput(_, n, _, []).
+assessSetCaptureInput(_, n, _, CapturableSetsAfter) :-
+        CapturableSetsAfter = [].
 
 assessSetCaptureInput(State, _, _, _) :-
         write('Invalid input. Try again.'), nl,
-        playRound(State).
+        assessRound(State).
 
 /**
 Clause Name: checkCapturableCards
@@ -806,7 +833,7 @@ Parameters:
 **/
 checkCapturableCards(State, [], [], []) :-
         write('No cards selected for capture. Invalid move, try again.'), nl,
-        playRound(State).
+        assessRound(State).
 
 checkCapturableCards(State, _, _, _).
 
