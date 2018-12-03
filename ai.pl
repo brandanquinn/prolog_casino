@@ -230,23 +230,56 @@ checkCardsPlayed(State, CardSelected, [], MoveType) :-
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = increase,
         [CardPlayed | Rest] = Hand,
-        % isCaptureCard(State, CardSelected, CardPlayed, Hand, MoveType),
+        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
         aiIncrease(State, CardSelected, CardPlayed, Rest).
 
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = extend,
         [CardPlayed | Rest] = Hand,
-        % isCaptureCard(State, CardSelected, CardPlayed, Hand, MoveType),
+        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
         aiExtendBuild(State, CardSelected, CardPlayed, Rest).
 
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = build,
         [CardPlayed | Rest] = Hand,
-        % isCaptureCard(State, CardSelected, CardPlayed, Hand, MoveType),
+        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
         aiBuild(State, CardSelected, CardPlayed, Rest).
+
+/**
+
+**/
+isCaptureCard(State, CardSelected, PlayerHand, MoveType, CardPlayed) :-
+        getBuildsFromState(State, Builds),
+        getCapturableBuilds(CardPlayed, Builds, _, CapturableBuilds),
+        assessCaptureCards(State, CardSelected, PlayerHand, MoveType, CapturableBuilds, CardPlayed).
+
+/**
+
+**/
+assessCaptureCards(_, _, _, _, Builds, _) :-
+        Builds = [].
+
+assessCaptureCards(State, CardSelected, PlayerHand, MoveType, Builds, CardPlayed) :-
+        indexOf(PlayerHand, CardPlayed, Index),
+        nth0(Index, PlayerHand, _, RestOfHand),
+        getValue(CardPlayed, PlayedVal),
+        getCaptureCardsInHand(PlayerHand, PlayedVal, _, CaptureCards),
+        onlyCaptureCard(State, CardSelected, PlayerHand, MoveType, CardPlayed, CaptureCards).
+
+/**
+
+**/
+onlyCaptureCard(State, CardSelected, PlayerHand, MoveType, CardPlayed, CaptureCards) :-
+        CaptureCards = [],
+        getBuildsFromState(State, Builds),
+        getSubHand(CardPlayed, PlayerHand, UpdatedHand),
+        selectNewCardForAssessment(State, CardSelected, UpdatedHand, MoveType).
+
+onlyCaptureCard(_, _, _, _, _, _).
+
 
 /**
 Clause Name: assessCardPlayed
@@ -262,7 +295,6 @@ assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType) :-
         CardSelected = CardPlayed,
         getPlayNextFromState(State, CurrentPlayer),
         getCurrentPlayersHand(State, CurrentPlayer, PlayerHand),
-        getBuildsFromState(State, Builds),
         getSubHand(CardSelected, PlayerHand, UpdatedHand),
         selectNewCardForAssessment(State, CardSelected, UpdatedHand, MoveType).
 

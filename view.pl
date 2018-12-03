@@ -42,6 +42,7 @@ printBoard(State, HumanPile, HumanHand, TableCards, ComputerPile, ComputerHand) 
         getHumanScoreFromState(State, HumanScore),
         getComputerScoreFromState(State, ComputerScore),
         getRoundNumFromState(State, RoundNum),
+        getDeckFromState(State, GameDeck),
         write('Round Number: '),
         write(RoundNum), nl,
         write('Human Score: '),

@@ -35,7 +35,7 @@ loadGame() :-
         open(SaveFileName, read, SAVEFILE),
         read(SAVEFILE, SavedState),
         close(SAVEFILE),
-        playRound(SavedState).
+        assessRound(SavedState).
 
 /**
 Clause Name: startNewTournament
