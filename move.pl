@@ -106,6 +106,14 @@ makeMove(State, BuildsBeforeMove, _, MoveInput, _, TableCardsBeforeMove, _, Huma
         MoveInput = help,
         getHelp(State, BuildsBeforeMove, TableCardsBeforeMove, HumanHandBeforeMove).
 
+makeMove(State, _, _, MoveInput, _, _, _, _, _, _, _) :-
+        MoveInput = deck,
+        getDeckFromState(State, GameDeck),
+        write('Current deck: '), printCards(GameDeck), nl,
+        getLengthOfList(GameDeck, DeckSize),
+        write('Cards left: '), write(DeckSize), nl,
+        assessRound(State).
+
 
 makeMove(State, _, _, MoveInput, _, _, _, _, _, _, _) :-
         MoveInput = save,
@@ -121,6 +129,10 @@ makeMove(_, _, _, MoveInput, _, _, _, _, _, _, _) :-
         MoveInput = exit,
         write('Thanks for playing! Exiting game.'), nl,
         halt().
+
+makeMove(State, _, _, _, _, _, _, _, _, _, _) :-
+        write('Invalid move input. Try again'), nl,
+        assessRound(State).
 
 /**
 Clause Name: trail
@@ -228,6 +240,7 @@ checkBuildFound(_, _).
 % Creating new build:  
 build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
         getValue(CardSelected, SelectedValue),
+        sameValBuildsExist(State, SelectedValue, BuildsBeforeMove),
         getValue(CardPlayed, PlayedValue),
         aiGetTableCardsForBuild(CardSelected, CardPlayed, TableCardsBeforeMove, FinalCardsSelected),
         append(FinalCardsSelected, [CardPlayed], BuildCardList),
@@ -252,6 +265,36 @@ build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove
         whosPlayingNext(CurrentPlayer, NextPlayer),
         NewState = [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHandAfterMove, HumanPile, TableCardsAfterMove, BuildsAfterMove, NewBuildOwners, LastCapturer, GameDeck, NextPlayer],
         assessRound(NewState).
+
+/**
+Clause Name: sameValBuildsExist
+Purpose: Tries to find a build with the same value as card selected, if found. Warn user that they should extend this build and restart turn.
+Parameters:
+        State, List of variables involved in current game state.
+        BuildVal, Value of build in question.
+        SelectedValue, Value of card selected to sum new build to.
+**/
+sameValBuildsExist(State, SelectedValue, Builds) :-
+        [Build | Rest] = Builds,
+        getBuildValue([Build], BuildVal),
+        checkIfSameValue(State, BuildVal, SelectedValue),
+        sameValBuildsExist(State, SelectedValue, Rest).
+
+/**
+Clause Name: checkIfSameValue
+Purpose: Checks to see if Build value is the same as selected value. If true, restarts turn and tells user to extend the build.
+Parameters:
+        State, List of variables involved in current game state.
+        BuildVal, Value of build in question.
+        SelectedValue, Value of card selected to sum new build to.
+**/
+checkIfSameValue(State, BuildVal, SelectedValue) :-
+        BuildVal = SelectedValue,
+        write('Build with this value already exists. Must select to extend it. Try again.'), nl,
+        assessRound(State).
+
+checkIfSameValue(_, _, _).
+
 
 /**
 Clause Name: extendingBuild

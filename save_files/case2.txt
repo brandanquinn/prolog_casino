@@ -1,0 +1,18 @@
+[ 2,
+  
+  9,
+  [ c6, h5, d9 ],
+  [ ck, h4, d7, c9, h9, s9, cx, c2, s6, h6, d8, sj, cq, dq, ha, cj, d2, dx ],
+ 
+  10,
+  [ s7, d5, hq ],
+  [ sx, s8, dk, da, h7, c8, hj, ca, c4, c5, dj, sa, s2, s4, s5, s3, d6, h2, d3, c7, h3, sq, h8, sk, hx ],
+
+  [ c3, d4, hk ],
+
+  computer,
+
+  [],
+
+  computer
+]
