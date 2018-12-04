@@ -230,26 +230,34 @@ checkCardsPlayed(State, CardSelected, [], MoveType) :-
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = increase,
         [CardPlayed | Rest] = Hand,
-        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
+        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         aiIncrease(State, CardSelected, CardPlayed, Rest).
 
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = extend,
         [CardPlayed | Rest] = Hand,
-        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
+        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         aiExtendBuild(State, CardSelected, CardPlayed, Rest).
 
 checkCardsPlayed(State, CardSelected, Hand, MoveType) :-
         MoveType = build,
         [CardPlayed | Rest] = Hand,
-        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType),
+        isCaptureCard(State, CardSelected, Hand, MoveType, CardPlayed),
         aiBuild(State, CardSelected, CardPlayed, Rest).
 
 /**
-
+Clause Name: isCaptureCard
+Purpose: Check to see if card selected to play for assessment is a capture card for a build. 
+If it is the only viable capture card in your hand, move on to check the next card.
+Parameters:
+        State, List of variables involved in game state.
+        CardSelected, Card selected to sum build to for AI assessment.
+        PlayerHand, List of cards in player's hand.
+        MoveType, Type of move being assessed.
+        CardPlayed, Card in question.
 **/
 isCaptureCard(State, CardSelected, PlayerHand, MoveType, CardPlayed) :-
         getBuildsFromState(State, Builds),
@@ -257,7 +265,15 @@ isCaptureCard(State, CardSelected, PlayerHand, MoveType, CardPlayed) :-
         assessCaptureCards(State, CardSelected, PlayerHand, MoveType, CapturableBuilds, CardPlayed).
 
 /**
-
+Clause Name: assessCaptureCards
+Purpose: If card played is a capture card, check to see if it is the only capture card. If it is not a capture card, continue assessment.
+Parameters:
+        State, List of variables involved in game state.
+        CardSelected, Card selected to sum build to for AI assessment.
+        PlayerHand, List of cards in player's hand.
+        MoveType, Type of move being assessed.
+        Builds, List of builds that can be captured by card played.
+        CardPlayed, Card in question.
 **/
 assessCaptureCards(_, _, _, _, Builds, _) :-
         Builds = [].
@@ -266,11 +282,19 @@ assessCaptureCards(State, CardSelected, PlayerHand, MoveType, Builds, CardPlayed
         indexOf(PlayerHand, CardPlayed, Index),
         nth0(Index, PlayerHand, _, RestOfHand),
         getValue(CardPlayed, PlayedVal),
-        getCaptureCardsInHand(PlayerHand, PlayedVal, _, CaptureCards),
+        getCaptureCardsInHand(RestOfHand, PlayedVal, _, CaptureCards),
         onlyCaptureCard(State, CardSelected, PlayerHand, MoveType, CardPlayed, CaptureCards).
 
 /**
-
+Clause Name: onlyCaptureCard
+Purpose: If no other capture cards exist in player's hand, move on to assess the next card in hand. Else, continue with assessment.
+Parameters:
+        State, List of variables involved in game state.
+        CardSelected, Card selected to sum build to for AI assessment.
+        PlayerHand, List of cards in player's hand.
+        MoveType, Type of move being assessed.
+        CardPlayed, Card in question.
+        CaptureCards, List of other possible capture cards in hand.
 **/
 onlyCaptureCard(State, CardSelected, PlayerHand, MoveType, CardPlayed, CaptureCards) :-
         CaptureCards = [],

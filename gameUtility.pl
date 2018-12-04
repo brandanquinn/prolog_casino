@@ -627,7 +627,13 @@ assessOwnership(State, BuildOwner, CurrentPlayer) :-
         playRound(State).
 
 /**
-
+Clause Name: isRoundOver
+Purpose: Check to see if Round is over, if true, computes and updates scores and checks to see if tournament is over. If it is not, start new round.
+Parameters:
+        State, List of variables in current game state.
+        GameDeck, List of cards in current game deck.
+        HumanHand, List of cards in human players hand.
+        ComputerHand, List of cards in computer players hand.
 **/
 isRoundOver(State, GameDeck, HumanHand, ComputerHand) :-
         handsEmpty(State, HumanHand, ComputerHand),
@@ -639,6 +645,7 @@ isRoundOver(State, GameDeck, HumanHand, ComputerHand) :-
         getTableCardsFromState(State, RemainingTableCards),
         addTableCardsToLastCapturer(State, LastCapturer, RemainingTableCards, HumanPile, ComputerPile),
         computeScores(State, HumanPile, ComputerPile, HumanScore, ComputerScore),
+        isTournamentOver(HumanScore, ComputerScore),
         getRoundNumFromState(State, OldRoundNum),
         shuffleDeck(NewGameDeck, GameDeckBeforeMove),
         dealCards(GameDeckBeforeMove, HNewGameDeck, HumanHandBeforeMove),
@@ -654,6 +661,32 @@ isRoundOver(State, GameDeck, HumanHand, ComputerHand) :-
         printBoard(NewState, NewHumanPile, HumanHandBeforeMove, TableCardsBeforeMove, NewComputerPile, ComputerHandBeforeMove),               
         playRound(NewState).
 
+/**
+Clause Name: isTournamentOver
+Purpose: Check players score to see if tournament is over and determines who is the winner. 
+Parameters:
+        HumanScore, Curent human players score.
+        ComputerScore, Current computer players score.
+**/
+isTournamentOver(HumanScore, ComputerScore) :-
+        HumanScore > 21,
+        HumanScore > ComputerScore,
+        write('--------------------------------'), nl,
+        write('Human player wins the tournament!'), nl,
+        write('Human Final Score: '), write(HumanScore), nl,
+        write('Computer Final Score: '), write(ComputerScore), nl,
+        halt().
+
+isTournamentOver(HumanScore, ComputerScore) :-
+        ComputerScore > 21,
+        ComputerScore > HumanScore,
+        write('--------------------------------'), nl,
+        write('Computer player wins the tournament!'), nl,
+        write('Human Final Score: '), write(HumanScore), nl,
+        write('Computer Final Score: '), write(ComputerScore), nl,
+        halt().
+
+isTournamentOver(_, _).
 
 /**
 Clause Name: handsEmpty
@@ -711,7 +744,14 @@ addTableCardsToLastCapturer(_, LastCapturer, _, HumanPile, ComputerPile) :-
         getComputerPileFromState(State, ComputerPile).
 
 /**
-
+Clause Name: computeScores
+Purpose: Compute and update players scores based on game rules.
+Parameters:
+        State, List of variables involved in current game state.
+        HumanPile, List of cards in human players pile.
+        ComputerPile, List of cards in computer players pile.
+        HumanScore, Human players current score.
+        ComputerScore, Computer players current score.
 **/
 computeScores(State, HumanPile, ComputerPile, HumanScore, ComputerScore) :-
         % get current scores
@@ -846,7 +886,7 @@ findSpecificCards(PlayerPile, PlayerScoreIn, PlayerScoreOut) :-
         
 /**
 Clause Name: isCardTenOfDiamonds
-Purpose: Check if card in pile is the ten of diamonds.
+Purpose: Check if card in pile is the ten of diamonds, add two points to player score if so.
 Parameters:
         Card, card being assessed.
         PlayerScoreIn, Current players score.
@@ -861,7 +901,7 @@ isCardTenOfDiamonds(_, PlayerScoreIn, PlayerScoreOut) :-
 
 /**
 Clause Name: isCardTwoOfSpades
-Purpose: Check if card in pile is the two of spades.
+Purpose: Check if card in pile is the two of spades, add a point to player score if so.
 Parameters:
         Card, card being assessed.
         PlayerScoreIn, Current players score.
@@ -875,7 +915,12 @@ isCardTwoOfSpades(_, PlayerScoreIn, PlayerScoreOut) :-
         PlayerScoreOut = PlayerScoreIn.
 
 /**
-
+Clause Name: isCardAce
+Purpose: Check if card in pile is an ace, add a point to player score if so.
+Parameters:
+        Type, Type of card being assessed.
+        PlayerScoreIn, Current players score.
+        PlayerScoreOut, U/I variable to send updated score out of clause.
 **/
 isCardAce((_, Type), PlayerScoreIn, PlayerScoreOut) :-
         Type = a,
