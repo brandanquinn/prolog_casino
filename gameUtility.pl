@@ -624,7 +624,7 @@ isTournamentOver(HumanScore, ComputerScore) :-
         halt().
 
 isTournamentOver(HumanScore, ComputerScore) :-
-        HumanScore > 21,
+        HumanScore >= 21,
         HumanScore = ComputerScore,
         write('--------------------------------'), nl,
         write('Players have tied!'), nl,
