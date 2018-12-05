@@ -27,8 +27,8 @@ Algorithm:
     1. Assign pre-built deck list to Deck variable
     2. Call random_permutation() to shuffle pre-built deck list and assign the new list to ShuffledDeck variable 
 **/
-shuffleDeck(NewGameDeck, GameDeckBeforeMove) :- deck(NewGameDeck),
-                            random_permutation(NewGameDeck, GameDeckBeforeMove).
+shuffleDeck(NewGameDeck, ShuffledGameDeck) :- deck(NewGameDeck),
+                            random_permutation(NewGameDeck, ShuffledGameDeck).
 
 /**
 Clause Name: getValue
@@ -219,69 +219,6 @@ getSaveFileName(SaveFileName) :-
         string_concat(FilePath, '.txt', SaveFileName).
 
 /**
-Clause Name: getSelection
-Purpose: Continuously select cards from a given list, until -1 is input.
-Parameters:
-    TableCardsBeforeMove, List of cards on the table before a move is made.
-    TableCardsForBuild, List of cards selected for a build.
-    FinalCardsSelected, Uninstantiated list of cards that will contain the final list.
-    Input, User input to select card. 
-**/
-getSelection([], _, _, _).
-
-getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input) :-
-        Input = -1,
-        FinalCardsSelected = TableCardsForBuild.
-
-getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input) :-
-        selectCard(TableCardsBeforeMove, TableCardSelected, Input),
-        append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
-        removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
-        write('Select the card you want to add to set: '),
-        printCards(NewTableCards),
-        read(NewInput),
-        getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
-
-
-getSelection(TableCardsBeforeMove, TableCardsForBuild, FinalCardsSelected, Input) :-
-        selectCard(TableCardsBeforeMove, TableCardSelected, Input),
-        append(TableCardsForBuild, [TableCardSelected], NewCardsSelected),
-        removeCardFromList(TableCardSelected, TableCardsBeforeMove, NewTableCards),
-        write('Cards currently selected: '), printCards(NewCardsSelected), nl,
-        write('Select the card(s) you want to add to set: '),
-        printCards(NewTableCards),
-        read(NewInput),
-        getSelection(NewTableCards, NewCardsSelected, FinalCardsSelected, NewInput).
-
-/**
-Clause Name: getTableCardsForSets
-Purpose: Wrapper to get cards selected for set capture by user.
-Parameters:
-    TableCardsBeforeMove, List of cards to be selected from the table.
-    FinalCardsSelected, List of cards selected by user.
-**/
-getTableCardsForSets(TableCardsBeforeMove, FinalCardsSelected) :-
-        write('Select the card you want to add to set for capture: '),
-        printCards(TableCardsBeforeMove),
-        read(Input),
-        getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
-        write('Cards selected from table: '), printCards(FinalCardsSelected), nl.
-
-/**
-Clause Name: getTableCardsForBuild
-Purpose: Wrapper to get cards selected for build by user.
-Parameters:
-    TableCardsBeforeMove, List of cards to be selected from the table.
-    FinalCardsSelected, List of cards selected by user.
-**/
-getTableCardsForBuild(TableCardsBeforeMove, FinalCardsSelected) :-
-        write('Select the card you want to build with: '),
-        printCards(TableCardsBeforeMove),
-        read(Input),
-        getSelection(TableCardsBeforeMove, [], FinalCardsSelected, Input),
-        write('Cards selected from table: '), printCards(FinalCardsSelected), nl.
-
-/**
 Clause Name: getAllSubsets
 Purpose: Find all subsets of a current list.
 Parameters:
@@ -290,8 +227,6 @@ Parameters:
 **/
 getAllSubsets(TableCards, SubsetList) :-
         findall(X, subset(TableCards, X), SubsetList).
-
-
 
 /**
 Clause Name: findViableSubset
@@ -309,7 +244,7 @@ findViableSubset(_, _, _, SetIn, SetOut) :-
         SetIn \= [],
         SetOut = SetIn.
 
-findViableSubset(SubsetList, SelectedValue, PlayedVal, SetIn, SetOut) :-
+findViableSubset(SubsetList, SelectedValue, PlayedVal, _, SetOut) :-
         [Set | Rest] = SubsetList,
         getSetValue(Set, 0, SetVal),
         assessSetVal(SetVal, SelectedValue, PlayedVal, Set, SetAfterAssessment),
@@ -443,7 +378,7 @@ Parameters:
     BuildsAfterMove, Uninstantiated variable that will contain list of current builds after captured ones are removed.
     FinalBuilds, Uninstantiated variable used to pass the updated BuildsAfterMove variable through.
 **/
-removeSetFromList(Build, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
+removeSetFromList(_, BuildsBeforeMove, BuildsAfterMove, FinalBuilds) :-
         BuildsBeforeMove = [],
         FinalBuilds = BuildsAfterMove.
 
@@ -499,7 +434,7 @@ Parameters:
         BuildOwners, List of current build owners.
         NewBuildOwners, Uninstantiated variable to pass new list of build owners through.
 **/
-removeBuildOwners(CapturedBuilds, BuildsBeforeMove, BuildOwners, NewBuildOwners) :-
+removeBuildOwners(CapturedBuilds, _, BuildOwners, NewBuildOwners) :-
         CapturedBuilds = [],
         NewBuildOwners = BuildOwners.
 
@@ -507,7 +442,8 @@ removeBuildOwners(CapturedBuilds, BuildsBeforeMove, BuildOwners, NewBuildOwners)
         [B1 | Rest] = CapturedBuilds,
         indexOf(BuildsBeforeMove, B1, Index),
         nth0(Index, BuildOwners, _, RemainingBuildOwners),
-        removeBuildOwners(Rest, BuildsBeforeMove, RemainingBuildOwners, NewBuildOwners).
+        nth0(Index, BuildsBeforeMove, _, RemainingBuilds),
+        removeBuildOwners(Rest, RemainingBuilds, RemainingBuildOwners, NewBuildOwners).
         
 
 /**
@@ -560,8 +496,9 @@ Parameters:
         BuildOwners, List of build owners.
         CurrentPlayer, Player currently making move.
 **/
-validateTrail(State, CardSelected, TableCards, BuildOwners, CurrentPlayer) :-
+validateTrail(_, _, _, _, CurrentPlayer) :-
         CurrentPlayer = computer.
+
 validateTrail(State, CardSelected, TableCards, BuildOwners, CurrentPlayer) :-
         checkMatchingLooseCards(State, CardSelected, TableCards),
         checkBuildOwnership(State, BuildOwners, CurrentPlayer).
@@ -574,7 +511,7 @@ Parameters:
         Type, Type of card selected to trail.
         TableCards, List of cards on the table.
 **/
-checkMatchingLooseCards(State, (_, Type), []).
+checkMatchingLooseCards(_, _, []).
 checkMatchingLooseCards(State, (_, Type), TableCards) :-
         [TableCard | Rest] = TableCards,
         (_, TableCardType) = TableCard,
@@ -589,11 +526,11 @@ Parameters:
         PlayedType, Type of card selected for trail.
         TableCardType, Type of card on table.
 **/
-assessType(State, PlayedType, TableCardType) :-
+assessType(_, PlayedType, TableCardType) :-
         PlayedType \= TableCardType.
 
 assessType(State, PlayedType, TableCardType) :-
-        Type = TableCardType,
+        PlayedType = TableCardType,
         write('Trail move cannot be made. Matching loose card exists.'), nl,
         playRound(State).
 
@@ -605,7 +542,7 @@ Parameters:
         BuildOwners, List of current build owners.
         CurrentPlayer, identity of player currently making move.
 **/
-checkBuildOwnership(State, [], CurrentPlayer).
+checkBuildOwnership(_, [], _).
 checkBuildOwnership(State, BuildOwners, CurrentPlayer) :-
         [Owner | Rest] = BuildOwners,
         assessOwnership(State, Owner, CurrentPlayer),
@@ -619,7 +556,7 @@ Parameters:
         BuildOwner, Owner of build on table.
         CurrentPlayer, identity of player currently making move to check against BuildOwner.
 **/
-assessOwnership(State, BuildOwner, CurrentPlayer) :-
+assessOwnership(_, BuildOwner, CurrentPlayer) :-
         BuildOwner \= CurrentPlayer.
 assessOwnership(State, BuildOwner, CurrentPlayer) :-
         BuildOwner = CurrentPlayer,
@@ -647,7 +584,7 @@ isRoundOver(State, GameDeck, HumanHand, ComputerHand) :-
         computeScores(State, HumanPile, ComputerPile, HumanScore, ComputerScore),
         isTournamentOver(HumanScore, ComputerScore),
         getRoundNumFromState(State, OldRoundNum),
-        shuffleDeck(NewGameDeck, GameDeckBeforeMove),
+        shuffleDeck(_, GameDeckBeforeMove),
         dealCards(GameDeckBeforeMove, HNewGameDeck, HumanHandBeforeMove),
         dealCards(HNewGameDeck, CNewGameDeck, ComputerHandBeforeMove),
         dealCards(CNewGameDeck, TNewGameDeck, TableCardsBeforeMove),
@@ -669,7 +606,7 @@ Parameters:
         ComputerScore, Current computer players score.
 **/
 isTournamentOver(HumanScore, ComputerScore) :-
-        HumanScore > 21,
+        HumanScore >= 21,
         HumanScore > ComputerScore,
         write('--------------------------------'), nl,
         write('Human player wins the tournament!'), nl,
@@ -678,10 +615,19 @@ isTournamentOver(HumanScore, ComputerScore) :-
         halt().
 
 isTournamentOver(HumanScore, ComputerScore) :-
-        ComputerScore > 21,
+        ComputerScore >= 21,
         ComputerScore > HumanScore,
         write('--------------------------------'), nl,
         write('Computer player wins the tournament!'), nl,
+        write('Human Final Score: '), write(HumanScore), nl,
+        write('Computer Final Score: '), write(ComputerScore), nl,
+        halt().
+
+isTournamentOver(HumanScore, ComputerScore) :-
+        HumanScore > 21,
+        HumanScore = ComputerScore,
+        write('--------------------------------'), nl,
+        write('Players have tied!'), nl,
         write('Human Final Score: '), write(HumanScore), nl,
         write('Computer Final Score: '), write(ComputerScore), nl,
         halt().

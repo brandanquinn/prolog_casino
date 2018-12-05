@@ -30,7 +30,7 @@ Purpose: Load a saved game state
 **/
 loadGame() :- 
         getSaveFileName(SaveFileName),
-        catch(open(SaveFileName, read, TESTFILE), E, (write('Could not find file. Try again.'), nl, loadGame())),
+        catch(open(SaveFileName, read, TESTFILE), _, (write('Could not find file. Try again.'), nl, loadGame())),
         close(TESTFILE),
         open(SaveFileName, read, SAVEFILE),
         read(SAVEFILE, SavedState),
@@ -54,7 +54,7 @@ setupRound() :-
         write('Call the coin toss to go first! (h/t): '),
         read(CoinTossInput),
         coinToss(CoinTossInput, NextPlayer),
-        shuffleDeck(NewGameDeck, GameDeckBeforeMove),
+        shuffleDeck(_, GameDeckBeforeMove),
         dealCards(GameDeckBeforeMove, HNewGameDeck, HumanHandBeforeMove),
         dealCards(HNewGameDeck, CNewGameDeck, ComputerHandBeforeMove),
         dealCards(CNewGameDeck, TNewGameDeck, TableCardsBeforeMove),
@@ -100,4 +100,4 @@ playRound(State) :-
         % [RoundNum, ComputerScore, ComputerHand, ComputerPile, HumanScore, HumanHand, HumanPile, TableCards, Builds, BuildOwners, LastCapturer, GameDeck, NextPlayer]
         NewState = [RoundNum, ComputerScore, ComputerHandAfterCheck, ComputerPileBeforeMove, HumanScore, HumanHandAfterCheck, HumanPileBeforeMove, TableCardsBeforeMove, BuildsBeforeMove, BuildOwners, LastCapturer, GameDeck, NextPlayer],
         printBoard(NewState, HumanPileBeforeMove, HumanHandAfterCheck, TableCardsBeforeMove, ComputerPileBeforeMove, ComputerHandAfterCheck),
-        getMove(NewState, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandAfterCheck, ComputerHandAfterCheck, HumanHand, ComputerHand, TableCards, HumanPileAfterMove, ComputerPileAfterMove).  
+        getMove(NewState, BuildsBeforeMove, TableCardsBeforeMove, HumanHandAfterCheck).  

@@ -15,26 +15,23 @@ Parameters:
     NextPlayer, Player who is currently making the move.
     TableCardsBeforeMove, List of table cards before a move is made.
     HumanHandBeforeMove, List of cards in human's hand before move is made.
-    ComputerHandBeforeMove, List of cards in computer's hand before move is made.
-    HumanHand
 **/
-getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :-
+getMove(State, BuildsBeforeMove, TableCardsBeforeMove, HumanHandBeforeMove) :-
         getPlayNextFromState(State, CurrentPlayer),
         CurrentPlayer = human,
         write('What move would you like to make?'), nl,
         write('(capture, build, extend, increase, trail, help, save, deck, or exit): '),
         read(MoveInput),
-        getHumanPileFromState(State, HumanPileBeforeMove),
-        getComputerPileFromState(State, ComputerPileAfterMove),
-        makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove).
+        makeMove(State, BuildsBeforeMove, MoveInput, TableCardsBeforeMove, HumanHandBeforeMove).
 
 % Computer move
-getMove(State, BuildsBeforeMove, BuildsAfterMove, NextPlayer, TableCardsBeforeMove, HumanHandBeforeMove, ComputerHandBeforeMove, HumanHandAfterMove, ComputerHandAfterMove, TableCardsAfterMove, HumanPileAfterMove, ComputerPileAfterMove) :- 
+getMove(State, BuildsBeforeMove, _, _) :- 
         getPlayNextFromState(State, CurrentPlayer),
         CurrentPlayer = computer,
-        getHelp(State, BuildsBeforeMove, TableCardsBeforeMove, ComputerHandBeforeMove).
+        getComputerHandFromState(State, ComputerHand),
+        getHelp(State, BuildsBeforeMove, ComputerHand).
 
-getHelp(State, Builds, TableCards, PlayerHand) :-
+getHelp(State, Builds, PlayerHand) :-
         % Check for increase
         tryIncrease(State, Builds, PlayerHand, PlayerHand).
 
@@ -48,25 +45,26 @@ Parameters:
     HumanHandBeforeMove, List of cards in player's hand.
     HumanHandAfterMove, Variable to be instantiated to list of cards in hand after move is made.
 **/
-makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(State, _, MoveInput, TableCardsBeforeMove, HumanHandBeforeMove) :-
         MoveInput = trail,
         write('Select the idx of card in your hand: '),
         printCards(HumanHandBeforeMove),
         read(Input),
         write('Human making move.'), nl,
         selectCard(HumanHandBeforeMove, Card, Input),
-        trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove).
+        trail(State, Card, TableCardsBeforeMove, HumanHandBeforeMove).
 
-makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(State, BuildsBeforeMove, MoveInput, TableCardsBeforeMove, HumanHandBeforeMove) :-        
         MoveInput = capture,
         write('Select the idx of card in your hand: '),
         printCards(HumanHandBeforeMove),
         read(Input),
         write('Human making move.'), nl,
         selectCard(HumanHandBeforeMove, Card, Input), 
-        capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove, BuildsBeforeMove, BuildsAfterMove).
+        getHumanPileFromState(State, HumanPile),
+        capture(State, Card, TableCardsBeforeMove, HumanHandBeforeMove, HumanPile, BuildsBeforeMove).
 
-makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(State, BuildsBeforeMove, MoveInput, TableCardsBeforeMove, HumanHandBeforeMove) :-        
         MoveInput = extend,
         write('Select the card you want to sum the multi-build to: '),
         printCards(HumanHandBeforeMove),
@@ -76,9 +74,9 @@ makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBe
         read(Input2),
         selectCard(HumanHandBeforeMove, CardSelected, Input1),
         selectCard(HumanHandBeforeMove, CardPlayed, Input2),
-        extendBuild(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
+        extendBuild(State, CardSelected, CardPlayed, TableCardsBeforeMove, HumanHandBeforeMove, BuildsBeforeMove).
 
-makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(State, BuildsBeforeMove, MoveInput, TableCardsBeforeMove, HumanHandBeforeMove) :-        
         MoveInput = build,
         write('Select the card you want to sum the build to: '),
         printCards(HumanHandBeforeMove),
@@ -88,9 +86,9 @@ makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBe
         read(Input2),
         selectCard(HumanHandBeforeMove, CardSelected, Input1),
         selectCard(HumanHandBeforeMove, CardPlayed, Input2),
-        build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove).
+        build(State, CardSelected, CardPlayed, TableCardsBeforeMove, HumanHandBeforeMove, BuildsBeforeMove).
 
-makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumanPileAfterMove) :-
+makeMove(State, BuildsBeforeMove, MoveInput, TableCardsBeforeMove, HumanHandBeforeMove) :-
         MoveInput = increase,
         write('Select the card you want to sum the increased build to: '),
         printCards(HumanHandBeforeMove),
@@ -102,11 +100,11 @@ makeMove(State, BuildsBeforeMove, BuildsAfterMove, MoveInput, Card, TableCardsBe
         selectCard(HumanHandBeforeMove, CardPlayed, Input2),
         increase(State, CardSelected, CardPlayed, TableCardsBeforeMove, HumanHandBeforeMove, BuildsBeforeMove).
 
-makeMove(State, BuildsBeforeMove, _, MoveInput, _, TableCardsBeforeMove, _, HumanHandBeforeMove, _, _, _) :-
+makeMove(State, BuildsBeforeMove, MoveInput, _, HumanHandBeforeMove) :-
         MoveInput = help,
-        getHelp(State, BuildsBeforeMove, TableCardsBeforeMove, HumanHandBeforeMove).
+        getHelp(State, BuildsBeforeMove, HumanHandBeforeMove).
 
-makeMove(State, _, _, MoveInput, _, _, _, _, _, _, _) :-
+makeMove(State, _, MoveInput, _, _) :-
         MoveInput = deck,
         getDeckFromState(State, GameDeck),
         write('Current deck: '), printCards(GameDeck), nl,
@@ -115,7 +113,7 @@ makeMove(State, _, _, MoveInput, _, _, _, _, _, _, _) :-
         assessRound(State).
 
 
-makeMove(State, _, _, MoveInput, _, _, _, _, _, _, _) :-
+makeMove(State, _, MoveInput, _, _) :-
         MoveInput = save,
         getSaveFileName(SaveFileName),
         open(SaveFileName, write, SAVEFILE),
@@ -125,12 +123,12 @@ makeMove(State, _, _, MoveInput, _, _, _, _, _, _, _) :-
         write('Game saved. Exiting now.'), nl,
         halt().
 
-makeMove(_, _, _, MoveInput, _, _, _, _, _, _, _) :-
+makeMove(_, _, MoveInput, _, _) :-
         MoveInput = exit,
         write('Thanks for playing! Exiting game.'), nl,
         halt().
 
-makeMove(State, _, _, _, _, _, _, _, _, _, _) :-
+makeMove(State, _, _, _, _) :-
         write('Invalid move input. Try again'), nl,
         assessRound(State).
 
@@ -144,7 +142,7 @@ Parameters:
     HumanHandBeforeMove/ComputerHandBeforeMove, List of cards in player's hand.
     HumanHandAfterMove/ComputerHandAfterMove, Variable to be instantiated to list of cards in hand after card is played.
 **/
-trail(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HandBeforeMove, HandAfterMove) :- 
+trail(State, Card, TableCardsBeforeMove, HandBeforeMove) :- 
         getBuildOwnersFromState(State, BuildOwners),
         getPlayNextFromState(State, CurrentPlayer),
         validateTrail(State, Card, TableCardsBeforeMove, BuildOwners, CurrentPlayer),
@@ -178,7 +176,7 @@ Paramaters:
     HumanPileAfterMove, Uninstantiated list of cards in human player's pile after move is made.
 **/
 % Extending Build to Multi-build:
-extendBuild(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+extendBuild(State, CardSelected, CardPlayed, TableCardsBeforeMove, HumanHandBeforeMove, BuildsBeforeMove) :-
         preliminaryCheck(State, BuildsBeforeMove),
         getPlayNextFromState(State, CurrentPlayer),
         getBuildOwnersFromState(State, BuildOwners),
@@ -189,11 +187,12 @@ extendBuild(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAft
         aiGetTableCardsForBuild(CardSelected, CardPlayed, TableCardsBeforeMove, FinalCardsSelected),
         append(FinalCardsSelected, [CardPlayed], BuildCardList),
         getBuildValue([BuildCardList], BuildVal),
+        getValue(CardSelected, SelectedValue),
         validateBuildCreated(State, BuildVal, SelectedValue),
         humanCheckMultiBuild(State, CurrentPlayer, [BuildFound, [BuildCardList]]),
         write('Creating build of: [ '), printBuilds([BuildFound, [BuildCardList]]), write(']'), nl,
         % update model
-        updateBuildList(BuildFound, BuildCardList, BuildsBeforeMove, BuildsIn, BuildsAfterMove),
+        updateBuildList(BuildFound, BuildCardList, BuildsBeforeMove, _, BuildsAfterMove),
         removeCardFromList(CardPlayed, HumanHandBeforeMove, HumanHandAfterMove),
         removeCardsFromList(BuildCardList, TableCardsBeforeMove, TableCardsAfterMove),
         getRoundNumFromState(State, RoundNum),
@@ -238,13 +237,13 @@ checkBuildFound(_, _).
 
 
 % Creating new build:  
-build(State, CardSelected, CardPlayed, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
+build(State, CardSelected, CardPlayed, TableCardsBeforeMove, HumanHandBeforeMove, BuildsBeforeMove) :-
         getValue(CardSelected, SelectedValue),
         sameValBuildsExist(State, SelectedValue, BuildsBeforeMove),
-        getValue(CardPlayed, PlayedValue),
         aiGetTableCardsForBuild(CardSelected, CardPlayed, TableCardsBeforeMove, FinalCardsSelected),
         append(FinalCardsSelected, [CardPlayed], BuildCardList),
         getBuildValue([BuildCardList], BuildVal),
+        getPlayNextFromState(State, CurrentPlayer),
         validateBuildCreated(State, BuildVal, SelectedValue),
         humanCheckBuild(State, CurrentPlayer, [BuildCardList]),
         write('Creating build of: [ '), printCards(BuildCardList), write(']'), nl,
@@ -274,6 +273,8 @@ Parameters:
         BuildVal, Value of build in question.
         SelectedValue, Value of card selected to sum new build to.
 **/
+sameValBuildsExist(_, _, []).
+
 sameValBuildsExist(State, SelectedValue, Builds) :-
         [Build | Rest] = Builds,
         getBuildValue([Build], BuildVal),
@@ -365,7 +366,7 @@ findBuildWithSameVal(_, _, CurrentBuild, PossibleBuild) :-
 
 findBuildWithSameVal(_, [], _, _).
 
-findBuildWithSameVal(CardSelected, BuildsList, CurrentBuild, PossibleBuild) :-
+findBuildWithSameVal(CardSelected, BuildsList, _, PossibleBuild) :-
         getValue(CardSelected, SelectedValue),
         [Build | Rest] = BuildsList,
         getBuildValue(Build, BuildValue),
@@ -394,14 +395,11 @@ Parameters:
         BuildVal, Total value of all cards in build created.
         SelectedValue, Value that build must sum to in order to be created.
 **/
-validateBuildCreated(State, BuildVal, SelectedValue) :-
+validateBuildCreated(_, BuildVal, SelectedValue) :-
         BuildVal = SelectedValue.
 
-validateBuildCreated(State, BuildVal, SelectedValue) :-
-        write('Build cannot be created. Set of cards selected totals to: '),
-        write(BuildVal),
-        write('. Needs to total to: '),
-        write(SelectedValue), nl,
+validateBuildCreated(State, _, _) :-
+        write('No builds can be made with cards selected. Try again.'),
         assessRound(State).
 
 /**
@@ -436,7 +434,7 @@ checkBuildEquality(Build, BuildToExtend, NewBuild, BuildOut) :-
         Build = BuildToExtend,
         append(Build, [NewBuild], BuildOut).
 
-checkBuildEquality(Build, _, NewBuild, BuildOut) :- BuildOut = Build.
+checkBuildEquality(Build, _, _, BuildOut) :- BuildOut = Build.
 
 /**
 Clause Name: increase
@@ -522,7 +520,7 @@ Parameters:
         Input, Index of build selected by user.
         BuildChosen, Uninstantiated variable that will contain Build selected to increase.
 **/
-assessBuildInput(State, BuildsList, Input, BuildChosen) :-
+assessBuildInput(_, BuildsList, Input, BuildChosen) :-
         nth0(Input, BuildsList, BuildChosen).
 assessBuildInput(State, _, _, _) :-
         write('Invalid input. Try again.'), nl,
@@ -537,7 +535,7 @@ Parameters:
         PlayedVal, Value of card played into the build.
         BuildVal, Value of the current build selected.
 **/
-assessBuildValue(State, SelectedValue, PlayedVal, BuildVal) :-
+assessBuildValue(_, SelectedValue, PlayedVal, BuildVal) :-
         SelectedValue is PlayedVal + BuildVal.
 
 assessBuildValue(State, SelectedValue, PlayedVal, BuildVal) :-
@@ -587,7 +585,7 @@ Parameters:
         CurrentPlayer, Player currently making move.
         Owner, Player that owns the build selected.
 **/
-checkIsOpponentsBuild(State, CurrentPlayer, Owner) :-
+checkIsOpponentsBuild(_, CurrentPlayer, Owner) :-
         CurrentPlayer \= Owner.
 
 checkIsOpponentsBuild(State, _, _) :-
@@ -626,29 +624,27 @@ Parameters:
 **/
 
 /** Can capture same face cards, builds, and sets **/
-capture(State, Card, TableCardsBeforeMove, TableCardsAfterMove, HumanHandBeforeMove, HumanHandAfterMove, HumanPileBeforeMove, HumaileAfterMove, BuildsBeforeMove, BuildsAfterMove) :-
-        /** Same face capture **/
-        getCapturableCards(TableCardsBeforeMove, Card, CapturableCardsBefore, CapturableCardsAfter),
-        removeCardsFromList(CapturableCardsAfter, TableCardsBeforeMove, TableCardsAfterSameVal),
-        write('Player has selected to capture: '), printCards(CapturableCardsAfter), write('with card:'), printCards([Card]), nl,
+capture(State, Card, TableCardsBeforeMove, HumanHandBeforeMove, HumanPileBeforeMove, BuildsBeforeMove) :-
+        getCapturableSetsForAI(Card, TableCardsBeforeMove, CapturableSets),
+        flattenList(CapturableSets, _, CapturableSetsAsListBeforePrompt),
+        removeCardsFromList(CapturableSetsAsListBeforePrompt, TableCardsBeforeMove, TableCardsAfterSets),
+        getCapturableCards(TableCardsAfterSets, Card, _, CapturableLooseCards),
+        removeCardsFromList(CapturableLooseCards, TableCardsAfterSets, TableCardsAfterSameVal),
         /** Build capture **/
         getBuildOwnersFromState(State, BuildOwners),
-        getCapturableBuilds(Card, BuildsBeforeMove, _, CapturableBuilds),
-        write('Player will also capture: '), printBuilds(CapturedBuilds), nl,
+        getCapturableBuilds(Card, BuildsBeforeMove, _, CapturedBuilds),
         % Issue here when more than one build is being captured at once.
         removeBuildOwners(CapturedBuilds, BuildsBeforeMove, BuildOwners, NewBuildOwners),
         removeSetsFromList(CapturedBuilds, BuildsBeforeMove, BuildsAfterMove),
         /** Set capture **/
-        getCapturableSetsForAI(Card, TableCardsAfterSameVal, CapturableSets),
-        capturerIsHuman(State, HumanHandBeforeMove, human, CapturableCardsAfter, CaptureableBuilds, CapturableBuildsAfterPrompt, CapturableSets, CapturableSetsAfterPrompt),
-        write('Player will also capture via sets: '), printSets(CapturableSetsAfterPrompt), nl,
-        flattenList(CapturableSets, _, CapturableSetsAsList),
+        capturerIsHuman(State, HumanHandBeforeMove, human, CapturableLooseCards, CapturedBuilds, CapturableBuildsAfterPrompt, CapturableSets, CapturableSetsAfterPrompt),
+        flattenList(CapturableSetsAfterPrompt, _, CapturableSetsAsList),
         removeSetsFromList(CapturableSetsAsList, TableCardsAfterSameVal, TableCardsAfterMove),
         append(HumanPileBeforeMove, [Card], HumanPileWithCaptureCard),
         flattenList(CapturableBuildsAfterPrompt, _, BuildCardsCaptured),
         flattenList(BuildCardsCaptured, _, FlatBuildCards),
         append(HumanPileWithCaptureCard, FlatBuildCards, HumanPileWithBuilds),
-        append(HumanPileWithBuilds, CapturableCardsAfter, HumanPileAfterSameVal),
+        append(HumanPileWithBuilds, CapturableLooseCards, HumanPileAfterSameVal),
         flattenList(CapturableSets, _, CapturableSetsAsList),
         append(HumanPileAfterSameVal, CapturableSetsAsList, HumanPileAfterMove),
         removeCardFromList(Card, HumanHandBeforeMove, HumanHandAfterMove),
@@ -670,7 +666,7 @@ Parameters:
         State, list of vars in game state.
         CapturableCards, List of capturable cards
 **/
-promptSameFaceCapture(State, []).
+promptSameFaceCapture(_, []).
 promptSameFaceCapture(State, CapturableCards) :-
         write('Do you want to capture the following cards? (y/n): '),
         printCards(CapturableCards),
@@ -795,36 +791,6 @@ assessNumberOfCaptureCards(State, CaptureCards) :-
 assessNumberOfCaptureCards(_, _).
 
 /**
-Clause Name: promptSetCapture
-Purpose: Prompt a user whether or not they want to capture sets.
-Parameters:
-        State, list of variables involved in a game state.
-        CardPlayed, Card selected to be played by user.
-        TableCards, List of cards on the table.
-        CapturableCards, List of capturable cards.
-        CapturableBuilds, List of capturable builds on the table.
-        CapturableSets, Uninstantiated var that will contain all capturable sets.
-**/
-promptSetCapture(State, CardPlayed, TableCards, CapturableCards, CapturableBuilds, CapturableSets) :-
-        CapturableCards = [],
-        CapturableBuilds = [],
-        write('Would you like to select sets to capture? (y/n): '),
-        read(Input),
-        Input = n,
-        write('No move made. Try again'), nl,
-        assessRound(State).
-
-promptSetCapture(State, CardPlayed, TableCards, CapturableCards, CapturableBuilds, CapturableSets) :-
-        write('Would you like to select sets to capture? (y/n): '),
-        read(Input),
-        Input = n,        
-        CapturableSets = [].
-
-promptSetCapture(State, CardPlayed, TableCards, CapturableCards, CapturabledBuilds, CapturableSets) :-
-        getCapturableSets(State, y, CardPlayed, TableCards, [], CapturableSetsAfter),
-        CapturableSets = CapturableSetsAfter.
-
-/**
 Clause Name: getCapturableCards
 Purpose: Find all capturable cards and report them back to player.
 Parameters:
@@ -833,7 +799,7 @@ Parameters:
     CapturableCardsBefore, Uninstantiated list of cards that can be captured.
     CapturableCardsAfterm, Uninstantiated list that will contain all cards capturable.
 **/
-getCapturableCards(TableCards, CardPlayed, CapturableCardsBefore, CapturableCardsAfter) :-
+getCapturableCards(TableCards, _, CapturableCardsBefore, CapturableCardsAfter) :-
         TableCards = [],
         CapturableCardsAfter = CapturableCardsBefore.
 
@@ -888,53 +854,3 @@ addCapturedSetsToPile(CapturableBuilds, HumanPileBefore, HumanPileAfter) :-
         [B1 | Rest] = CapturableBuilds,
         append(HumanPileBefore, B1, NewHumanPile),
         addCapturedSetsToPile(Rest, NewHumanPile, HumanPileAfter).
-
-/**
-Clause Name: getCapturableSets
-Purpose: Get list of capturable sets
-Parameters:
-    Input, User input as to whether or not they want to continue selecting sets for capture.
-    Card, Card selected to capture with.
-    TableCardsBeforeMove, List of cards on the table before the sets are generated for capture.
-    CapturableSetsBefore, Uninstantiated var to keep track of Capturable Sets
-    CapturableSetsAfter, Uninstantiated var used to send capturable sets through.
-**/
-getCapturableSets(State, Input, Card, TableCardsBeforeMove, CapturableSetsBefore, CapturableSetsAfter) :-
-        Input = n,
-        CapturableSetsAfter = CapturableSetsBefore.
-
-getCapturableSets(State, Input, Card, TableCardsBeforeMove, CabturableSetsBefore, CapturableSetsAfter) :-
-        getTableCardsForSets(TableCardsBeforeMove, SingleSet),
-        getSetValue(SingleSet, 0, SetVal),
-        getValue(Card, PlayedVal),
-        evaluateSet(State, PlayedVal, SetVal, SingleSet, SetAfterEval),
-        append(CapturableSetsBefore, [SetAfterEval], NewSets),
-        removeSetFromList(TableCardsBeforeMove, [SetAfterEval], [], TableCardsAfterMove),
-        write('Would you like to select another set for capture? (y/n)'),
-        read(SetInput),
-        getCapturableSets(State, SetInput, Card, TableCardsAfterMove, NewSets, CapturableSetsAfter).
-
-getCapturableSets(_, Card, TableCardsBeforeMove, CapturableCardsBefore, CapturableCardsAfter) :-
-        CapturableSetsAfter = [].
-
-/**
-Clause Name: evaluateSet
-Purpose: Evaluate whether set entered is possible.
-Parameters:
-        State, List of variables in game state.
-        PlayedVal, Numerical value of card played.
-        SetVal, Numerical value of set of cards selected.
-        Set, List of cards selected in set.
-        SetAfterEval, Uninstantiated variable that will contain list of cards in set.
-**/
-evaluateSet(State, PlayedVal, SetVal, Set, SetAfterEval) :-
-        PlayedVal = SetVal,
-        SetAfterEval = Set.
-
-evaluateSet(State, PlayedVal, SetVal, Set, SetAfterEval) :-
-        write('Invalid set entered. Sum of set: '), 
-        write(SetVal), 
-        write('. Needed to add up to: '),
-        write(PlayedVal),
-        write('. Try again.'), nl,
-        assessRound(State).

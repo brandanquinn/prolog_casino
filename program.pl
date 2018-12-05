@@ -7,8 +7,6 @@
 * Game Client File         *                  
 ***************************/
 
-:-style_check(-singleton).
-
 :- [game].
 :- [generalUtility].
 :- [gameUtility].

@@ -92,7 +92,7 @@ Parameters:
         Index, Index of max heuristic value.
         MaxHeuristic, Max heuristic value.
 **/
-assessMaxHeuristic(State, PlayerHand, Index, MaxHeuristic) :-
+assessMaxHeuristic(_, PlayerHand, Index, MaxHeuristic) :-
         MaxHeuristic \= 0,
         write('Best heuristic value is: '), write(MaxHeuristic),
         nth0(Index, PlayerHand, BestCard),
@@ -104,8 +104,7 @@ assessMaxHeuristic(State, PlayerHand, _, 0) :-
         getTableCardsFromState(State, TableCards),
         getPlayNextFromState(State, CurrentPlayer),
         getInputIfHuman(State, CardSelected, CurrentPlayer),
-        trail(State, CardSelected, TableCards, _, PlayerHand, _).
-
+        trail(State, CardSelected, TableCards, PlayerHand).
 /**
 Clause Name: getInputIfHuman
 Purpose: If player is human, ask them if they want to trail recommended AI card.
@@ -278,7 +277,7 @@ Parameters:
 assessCaptureCards(_, _, _, _, Builds, _) :-
         Builds = [].
 
-assessCaptureCards(State, CardSelected, PlayerHand, MoveType, Builds, CardPlayed) :-
+assessCaptureCards(State, CardSelected, PlayerHand, MoveType, _, CardPlayed) :-
         indexOf(PlayerHand, CardPlayed, Index),
         nth0(Index, PlayerHand, _, RestOfHand),
         getValue(CardPlayed, PlayedVal),
@@ -298,7 +297,6 @@ Parameters:
 **/
 onlyCaptureCard(State, CardSelected, PlayerHand, MoveType, CardPlayed, CaptureCards) :-
         CaptureCards = [],
-        getBuildsFromState(State, Builds),
         getSubHand(CardPlayed, PlayerHand, UpdatedHand),
         selectNewCardForAssessment(State, CardSelected, UpdatedHand, MoveType).
 
@@ -317,9 +315,7 @@ Parameters:
 **/
 assessCardPlayed(State, CardSelected, CardPlayed, Hand, MoveType) :-
         CardSelected = CardPlayed,
-        getPlayNextFromState(State, CurrentPlayer),
-        getCurrentPlayersHand(State, CurrentPlayer, PlayerHand),
-        getSubHand(CardSelected, PlayerHand, UpdatedHand),
+        getSubHand(CardSelected, Hand, UpdatedHand),
         selectNewCardForAssessment(State, CardSelected, UpdatedHand, MoveType).
 
 assessCardPlayed(_, CardSelected, CardPlayed, _, _) :-
@@ -686,7 +682,7 @@ Parameters:
         BuildIn, Used to pass builds around clause.
         BuildToIncrease, Used to send build found out of clause.
 **/
-aiGetBuildSelection(State, CardSelected, RestOfTestHand, CurrentPlayer, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease) :-      
+aiGetBuildSelection(State, CardSelected, RestOfTestHand, _, SelectedValue, PlayedVal, BuildsBeforeMove, BuildToIncrease) :-      
         checkAllBuilds(State, CardSelected, RestOfTestHand, BuildsBeforeMove, SelectedValue, PlayedVal, [], BuildToIncrease).
 
 /**
@@ -710,7 +706,7 @@ checkAllBuilds(_, _, _, _, _, _, BuildIn, BuildToIncrease) :-
         BuildIn \= [],
         BuildToIncrease = BuildIn.
 
-checkAllBuilds(State, CardSelected, RestOfTestHand, Builds, SelectedValue, PlayedVal, BuildIn, BuildToIncrease) :-
+checkAllBuilds(State, CardSelected, RestOfTestHand, Builds, SelectedValue, PlayedVal, _, BuildToIncrease) :-
         [Build | Rest] = Builds,
         getBuildValue(Build, BuildVal),
         aiAssessBuildValue(SelectedValue, PlayedVal, BuildVal, Build, BuildFound),
@@ -785,18 +781,20 @@ Parameters:
         CardPlayed, Card played to capture with.
 **/
 aiCapture(State, TableCards, Builds, CardPlayed) :-
-        getCapturableCards(TableCards, CardPlayed, _, CapturableLooseCards),
+        getCapturableSetsForAI(CardPlayed, TableCards, CapturableSets),
+        flattenList(CapturableSets, _, CapturableSetsAsListBeforePrompt),
+        removeCardsFromList(CapturableSetsAsListBeforePrompt, TableCards, TableCardsAfterSets),
+        getCapturableCards(TableCardsAfterSets, CardPlayed, _, CapturableLooseCards),
+        removeCardsFromList(CapturableLooseCards, TableCardsAfterSets, TableCardsAfterSameVal),
         getPlayNextFromState(State, CurrentPlayer),
-        removeCardsFromList(CapturableLooseCards, TableCards, TableCardsAfterSameVal),
         getCapturableBuilds(CardPlayed, Builds, _, CapturableBuilds),
-        getCapturableSetsForAI(CardPlayed, TableCardsAfterSameVal, CapturableSets),
         getCurrentPlayersHand(State, CurrentPlayer, PlayerHand),
         capturerIsHuman(State, PlayerHand, CurrentPlayer, CapturableLooseCards, CapturableBuilds, CapturableBuildsAfterPrompt, CapturableSets, CapturableSetsAfterPrompt),
         % need to update model
         getBuildOwnersFromState(State, BuildOwners),
         removeBuildOwners(CapturableBuildsAfterPrompt, Builds, BuildOwners, NewBuildOwners),
         removeSetsFromList(CapturableBuildsAfterPrompt, Builds, BuildsAfterMove),
-        flattenList(CapturableSets, _, CapturableSetsAsList),
+        flattenList(CapturableSetsAfterPrompt, _, CapturableSetsAsList),
         removeSetsFromList(CapturableSetsAsList, TableCardsAfterSameVal, TableCardsAfterMove),
         getCurrentPlayersPile(State, CurrentPlayer, PlayerPile),
         append(PlayerPile, [CardPlayed], PlayerPileWithCaptureCard),
@@ -850,7 +848,7 @@ Parameters:
         CapturableSets, List of sets that are recommended for capture by AI.
         CapturableSetsAfter, U/I variable that will either share value with CapturableSets or be set to [] if user selects not to capture.
 **/
-allowSetCapture(State, [], []).
+allowSetCapture(_, [], []).
 
 allowSetCapture(State, CapturableSets, CapturableSetsAfter) :-
         write('Do you want to capture the following sets? (y/n): '),
@@ -891,5 +889,5 @@ checkCapturableCards(State, [], [], []) :-
         write('No cards selected for capture. Invalid move, try again.'), nl,
         assessRound(State).
 
-checkCapturableCards(State, _, _, _).
+checkCapturableCards(_, _, _, _).
 
