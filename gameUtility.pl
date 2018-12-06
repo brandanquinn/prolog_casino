@@ -264,8 +264,9 @@ findCapturableSubsets(_, [], _, SetsIn, SetsOut) :- SetsOut = SetsIn.
 
 findCapturableSubsets(TableCards, SubsetList, CaptureValue, SetsIn, SetsOut) :-
         [Set | Rest] = SubsetList,
+        checkLengthOfSet(Set, SetAfterLengthCheck),
         getSetValue(Set, 0, SetVal),
-        assessSetValForCapture(SetVal, CaptureValue, Set, SetAfterAssessment, SetsIn, SetsAfterAssess),
+        assessSetValForCapture(SetVal, CaptureValue, SetAfterLengthCheck, SetAfterAssessment, SetsIn, SetsAfterAssess),
         capturableSetFound(SetAfterAssessment, TableCards, UpdatedTableCards, Rest, UpdatedSubsetList),
         findCapturableSubsets(UpdatedTableCards, UpdatedSubsetList, CaptureValue, SetsAfterAssess, SetsOut).
 
@@ -306,6 +307,20 @@ assessSetValForCapture(SetVal, CaptureValue, SetToAssess, SetAfterAssessment, Se
 assessSetValForCapture(_, _, _, SetAfterAssessment, SetsIn, SetsOut) :- 
         SetAfterAssessment = [],
         SetsOut = SetsIn.
+
+/**
+Clause Name: checkLengthOfSet
+Purpose: Check to make sure subset found is not just a single card.
+Parameters:
+        SetIn, Set being evaluated
+        SetOut, U/I variable to send evaluated set out of clause.
+**/
+checkLengthOfSet(SetIn, SetOut) :-
+        length(SetIn, 1),
+        SetOut = [].
+
+checkLengthOfSet(SetIn, SetOut) :-
+        SetOut = SetIn.
 
 /**
 Clause Name: capturableSetFound

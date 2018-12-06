@@ -850,6 +850,8 @@ Parameters:
 **/
 allowSetCapture(_, [], []).
 
+allowSetCapture(_, [[]], []).
+
 allowSetCapture(State, CapturableSets, CapturableSetsAfter) :-
         write('Do you want to capture the following sets? (y/n): '),
         printSets(CapturableSets),
